@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { api } from "@/api";
 import NoteCard from "@/components/NoteCard";
 import { MagnifyingGlass, FunnelSimple } from "@phosphor-icons/react";
 
@@ -9,10 +8,16 @@ const BRANCHES = ["CSE", "ECE", "EEE", "Mechanical", "Civil", "All", "Arts"];
 const CATEGORIES = ["Engineering", "Medical", "Law", "MBA", "Commerce", "Arts", "Competitive Exams"];
 const TYPES = ["PDF", "Handwritten", "Typed", "PYQ"];
 
+const DEMO_NOTES = [
+  { id: "1", title: "Digital Electronics Complete Notes", subject: "Digital Electronics", college: "NIT Patna", branch: "ECE", semester: 3, price: 49, rating: 4.8, downloads: 120, category: "Engineering", content_type: "PDF" },
+  { id: "2", title: "Signals and Systems Short Notes", subject: "Signals and Systems", college: "NIT Patna", branch: "ECE", semester: 4, price: 39, rating: 4.7, downloads: 95, category: "Engineering", content_type: "Handwritten" },
+  { id: "3", title: "DBMS Last Minute Notes", subject: "DBMS", college: "IIT Delhi", branch: "CSE", semester: 5, price: 59, rating: 4.9, downloads: 210, category: "Engineering", content_type: "Typed" },
+  { id: "4", title: "Engineering Mathematics PYQ Pack", subject: "Mathematics", college: "NIT Patna", branch: "All", semester: 2, price: 29, rating: 4.6, downloads: 160, category: "Engineering", content_type: "PYQ" },
+];
+
 export default function Browse() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [notes, setNotes] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
     q: searchParams.get("q") || "",
     college: searchParams.get("college") || "",
@@ -25,78 +30,91 @@ export default function Browse() {
     sort: searchParams.get("sort") || "recent",
   });
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const params = {};
-      Object.entries(filters).forEach(([k, v]) => { if (v !== "" && v !== undefined) params[k] = v; });
-      const r = await api.get("/notes", { params });
-      setNotes(r.data);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    let result = [...DEMO_NOTES];
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [filters]);
+    if (filters.q) {
+      const q = filters.q.toLowerCase();
+      result = result.filter((n) =>
+        `${n.title} ${n.subject} ${n.college} ${n.branch}`.toLowerCase().includes(q)
+      );
+    }
+
+    if (filters.college) result = result.filter((n) => n.college.toLowerCase().includes(filters.college.toLowerCase()));
+    if (filters.semester) result = result.filter((n) => String(n.semester) === String(filters.semester));
+    if (filters.branch) result = result.filter((n) => n.branch === filters.branch || n.branch === "All");
+    if (filters.subject) result = result.filter((n) => n.subject === filters.subject);
+    if (filters.category) result = result.filter((n) => n.category === filters.category);
+    if (filters.content_type) result = result.filter((n) => n.content_type === filters.content_type);
+    if (filters.free === "true") result = result.filter((n) => Number(n.price) === 0);
+    if (filters.free === "false") result = result.filter((n) => Number(n.price) > 0);
+
+    if (filters.sort === "rating") result.sort((a, b) => b.rating - a.rating);
+    if (filters.sort === "popular") result.sort((a, b) => b.downloads - a.downloads);
+    if (filters.sort === "price_low") result.sort((a, b) => a.price - b.price);
+    if (filters.sort === "price_high") result.sort((a, b) => b.price - a.price);
+
+    setNotes(result);
+  }, [filters]);
 
   const set = (k, v) => {
     const f = { ...filters, [k]: v };
     setFilters(f);
     const sp = new URLSearchParams();
-    Object.entries(f).forEach(([k, v]) => { if (v) sp.set(k, v); });
+    Object.entries(f).forEach(([key, val]) => {
+      if (val) sp.set(key, val);
+    });
     setSearchParams(sp);
   };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 border-2 border-black rounded-md flex items-center justify-center bg-[#4C7BF4] text-white"><MagnifyingGlass size={20} weight="bold" /></div>
+        <div className="w-10 h-10 border-2 border-black rounded-md flex items-center justify-center bg-[#4C7BF4] text-white">
+          <MagnifyingGlass size={20} weight="bold" />
+        </div>
         <h1 className="font-display text-4xl">Browse Notes</h1>
       </div>
 
       <div className="grid lg:grid-cols-12 gap-6">
         <aside className="lg:col-span-3 bg-white border-2 border-black rounded-lg p-5 brutal-shadow space-y-4 h-fit sticky top-24">
-          <div className="flex items-center gap-2 font-display text-xl"><FunnelSimple size={20} weight="bold" /> Filters</div>
+          <div className="flex items-center gap-2 font-display text-xl">
+            <FunnelSimple size={20} weight="bold" /> Filters
+          </div>
 
           <div className="flex items-center gap-2 border-2 border-black rounded-md px-3 py-2 bg-white">
             <MagnifyingGlass size={14} />
-            <input data-testid="filter-q" placeholder="Search keywords..." value={filters.q} onChange={(e) => set("q", e.target.value)} className="w-full text-sm outline-none" />
+            <input placeholder="Search keywords..." value={filters.q} onChange={(e) => set("q", e.target.value)} className="w-full text-sm outline-none" />
           </div>
 
-          <Select label="Category" testId="filter-category" value={filters.category} onChange={(v) => set("category", v)} options={CATEGORIES} />
-          <Select label="Branch" testId="filter-branch" value={filters.branch} onChange={(v) => set("branch", v)} options={BRANCHES} />
-          <Select label="Subject" testId="filter-subject" value={filters.subject} onChange={(v) => set("subject", v)} options={SUBJECTS} />
-          <Select label="Content type" testId="filter-type" value={filters.content_type} onChange={(v) => set("content_type", v)} options={TYPES} />
+          <Select label="Category" value={filters.category} onChange={(v) => set("category", v)} options={CATEGORIES} />
+          <Select label="Branch" value={filters.branch} onChange={(v) => set("branch", v)} options={BRANCHES} />
+          <Select label="Subject" value={filters.subject} onChange={(v) => set("subject", v)} options={SUBJECTS} />
+          <Select label="Content type" value={filters.content_type} onChange={(v) => set("content_type", v)} options={TYPES} />
 
           <div>
             <div className="text-xs uppercase font-bold mb-1">Semester</div>
-            <input data-testid="filter-semester" type="number" min="1" max="10" placeholder="Any" value={filters.semester} onChange={(e) => set("semester", e.target.value)} className="w-full border-2 border-black rounded-md px-3 py-2 text-sm" />
+            <input type="number" min="1" max="10" placeholder="Any" value={filters.semester} onChange={(e) => set("semester", e.target.value)} className="w-full border-2 border-black rounded-md px-3 py-2 text-sm" />
           </div>
 
           <div>
             <div className="text-xs uppercase font-bold mb-1">College</div>
-            <input data-testid="filter-college" placeholder="e.g. NIT Patna" value={filters.college} onChange={(e) => set("college", e.target.value)} className="w-full border-2 border-black rounded-md px-3 py-2 text-sm" />
+            <input placeholder="e.g. NIT Patna" value={filters.college} onChange={(e) => set("college", e.target.value)} className="w-full border-2 border-black rounded-md px-3 py-2 text-sm" />
           </div>
 
-          <div>
-            <div className="text-xs uppercase font-bold mb-1">Price</div>
-            <div className="flex gap-2">
-              {[["", "All"], ["true", "Free"], ["false", "Paid"]].map(([v, l]) => (
-                <button key={l} data-testid={`filter-price-${l}`} onClick={() => set("free", v)} className={`flex-1 py-2 text-xs uppercase font-bold border-2 border-black rounded-md ${filters.free === v ? "bg-[#F4FF47] brutal-shadow-sm" : "bg-white"}`}>{l}</button>
-              ))}
-            </div>
-          </div>
-
-          <Select label="Sort by" testId="filter-sort" value={filters.sort} onChange={(v) => set("sort", v)}
-            options={["recent", "rating", "popular", "price_low", "price_high"]} />
+          <Select label="Sort by" value={filters.sort} onChange={(v) => set("sort", v)} options={["recent", "rating", "popular", "price_low", "price_high"]} />
         </aside>
 
         <div className="lg:col-span-9">
-          <div className="text-sm font-bold uppercase text-neutral-700 mb-3" data-testid="browse-count">{loading ? "Loading..." : `${notes.length} notes found`}</div>
+          <div className="text-sm font-bold uppercase text-neutral-700 mb-3">
+            {notes.length} notes found
+          </div>
+
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {notes.map((n) => <NoteCard key={n.id} note={n} />)}
           </div>
-          {!loading && notes.length === 0 && (
+
+          {notes.length === 0 && (
             <div className="bg-white border-2 border-dashed border-black rounded-lg p-10 text-center">
               <div className="font-display text-2xl">No notes match these filters</div>
               <div className="text-sm text-neutral-600 mt-2">Try removing some filters or change keywords.</div>
@@ -108,10 +126,10 @@ export default function Browse() {
   );
 }
 
-const Select = ({ label, testId, value, onChange, options }) => (
+const Select = ({ label, value, onChange, options }) => (
   <div>
     <div className="text-xs uppercase font-bold mb-1">{label}</div>
-    <select data-testid={testId} value={value} onChange={(e) => onChange(e.target.value)} className="w-full border-2 border-black rounded-md px-3 py-2 text-sm bg-white">
+    <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full border-2 border-black rounded-md px-3 py-2 text-sm bg-white">
       <option value="">Any</option>
       {options.map((o) => <option key={o} value={o}>{o}</option>)}
     </select>

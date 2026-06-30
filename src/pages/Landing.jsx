@@ -25,12 +25,14 @@ export default function Landing() {
   const [stats, setStats] = useState({ notes: 0, students: 0, colleges: 0 });
 
   useEffect(() => {
-    // Auto-seed demo on first visit, then refresh stats
-    api.post("/seed/demo").catch(() => {}).finally(() => {
-      api.get("/stats").then((r) => setStats(r.data)).catch(() => {});
-    });
-    if (auth.getToken()) navigate("/home");
-  }, [navigate]);
+  api.get("/stats")
+    .then((r) => setStats(r.data))
+    .catch((err) => console.error(err));
+
+  if (auth.getToken()) {
+    navigate("/home");
+  }
+}, [navigate]);
 
   return (
     <div>

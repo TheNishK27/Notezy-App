@@ -22,7 +22,7 @@ const Row = ({ title, icon: Icon, accent, children, action }) => (
 
 export default function Home() {
   const navigate = useNavigate();
-  const user = auth.getUser();
+  const user = { name: "Student" };
   const [trending, setTrending] = useState([]);
   const [recent, setRecent] = useState([]);
   const [colleges, setColleges] = useState([]);
@@ -31,21 +31,35 @@ export default function Home() {
   const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const [t, r, c] = await Promise.all([
-          api.get("/notes/trending"),
-          api.get("/notes?sort=recent&limit=8"),
-          api.get("/colleges"),
-        ]);
-        setTrending(t.data);
-        setRecent(r.data);
-        setColleges(c.data);
-      } catch (e) {
-        toast.error("Couldn't load notes");
-      }
-    })();
-  }, []);
+  const demoNotes = [
+    {
+      id: "1",
+      title: "Digital Electronics Complete Notes",
+      subject: "Digital Electronics",
+      college: "NIT Patna",
+      branch: "ECE",
+      semester: 3,
+      price: 49,
+      rating: 4.8,
+      downloads: 120,
+    },
+    {
+      id: "2",
+      title: "Signals and Systems Short Notes",
+      subject: "Signals",
+      college: "NIT Patna",
+      branch: "ECE",
+      semester: 4,
+      price: 39,
+      rating: 4.7,
+      downloads: 95,
+    },
+  ];
+
+  setTrending(demoNotes);
+  setRecent(demoNotes);
+  setColleges([{ name: "NIT Patna", count: 2 }]);
+}, []);
 
   const runAi = async (e) => {
     e.preventDefault();

@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { auth } from "@/api";
+import { supabase } from "@/lib/supabase";
 import { BookOpenText, Compass, GraduationCap, MagnifyingGlass, UploadSimple, User, SignOut, House } from "@phosphor-icons/react";
 
 const NavItem = ({ to, label, icon: Icon, testId }) => {
@@ -20,8 +20,26 @@ const NavItem = ({ to, label, icon: Icon, testId }) => {
 
 export default function Nav() {
   const navigate = useNavigate();
-  const user = auth.getUser();
-  const onLogout = () => { auth.clear(); navigate("/"); };
+  const [user, setUser] = React.useState(null);
+
+React.useEffect(() => {
+  supabase.auth.getUser().then(({ data }) => {
+    setUser(data.user);
+  });
+
+  const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    setUser(session?.user || null);
+  });
+
+  return () => {
+    listener.subscription.unsubscribe();
+  };
+}, []);
+
+const onLogout = async () => {
+  await supabase.auth.signOut();
+  navigate("/");
+};
 
   return (
     <header className="sticky top-0 z-40 bg-white border-b-2 border-black">
@@ -51,7 +69,7 @@ export default function Nav() {
           ) : (
             <div className="flex items-center gap-2">
               <Link to="/profile" data-testid="nav-profile" className="w-10 h-10 bg-[#FF6B9E] border-2 border-black rounded-md flex items-center justify-center brutal-shadow-sm font-display">
-                {user.name?.[0]?.toUpperCase() || <User size={18} />}
+                {user?.user_metadata?.full_name?.[0]?.toUpperCase() || <User size={18} />}
               </Link>
               <button data-testid="nav-logout" onClick={onLogout} className="hidden md:flex items-center gap-1 px-2 py-2 text-xs font-bold uppercase hover:text-red-600">
                 <SignOut size={16} />

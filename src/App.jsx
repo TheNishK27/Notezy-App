@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
+import { supabase } from "@/lib/supabase";
 import "@/App.css";
 
 import Nav from "@/components/Nav";
@@ -15,11 +16,32 @@ import UploadPage from "@/pages/Upload";
 import SellerDashboard from "@/pages/SellerDashboard";
 import Profile from "@/pages/Profile";
 import CheckoutSuccess from "@/pages/CheckoutSuccess";
-import { auth } from "@/api";
 
 function Protected({ children }) {
   const location = useLocation();
-  if (!auth.getToken()) return <Navigate to="/auth" state={{ from: location }} replace />;
+  const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setLoading(false);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  if (loading) return <div className="p-8 font-bold">Loading...</div>;
+
+  if (!session) {
+    return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
   return children;
 }
 
