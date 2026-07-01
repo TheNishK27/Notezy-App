@@ -10,7 +10,7 @@ import { Toaster } from "sonner";
 import { supabase } from "@/lib/supabase";
 import "@/App.css";
 import WalletPage from "@/pages/Wallet";
-
+import WalletPage from "@/pages/WalletPage";
 import Nav from "@/components/Nav";
 import Landing from "@/pages/Landing";
 import Auth from "@/pages/Auth";
