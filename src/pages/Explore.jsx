@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import NoteCard from "@/components/NoteCard";
 import { Compass, Fire, Star, Clock } from "@phosphor-icons/react";
+import { supabase } from "@/lib/supabase";
 
 const DEMO_NOTES = [
   {
@@ -65,31 +66,38 @@ export default function Explore() {
   const [notes, setNotes] = useState([]);
 
   useEffect(() => {
-    let result = [...DEMO_NOTES];
+  const loadNotes = async () => {
+    let query = supabase.from("notes").select("*");
 
-    switch (tab) {
-      case "trending":
-        result.sort((a, b) => b.downloads - a.downloads);
-        break;
-
-      case "top":
-        result.sort((a, b) => b.rating - a.rating);
-        break;
-
-      case "new":
-        result.reverse();
-        break;
-
-      case "free":
-        result = result.filter((n) => n.price === 0);
-        break;
-
-      default:
-        break;
+    if (tab === "trending") {
+      query = query.order("downloads", { ascending: false });
     }
 
-    setNotes(result);
-  }, [tab]);
+    if (tab === "top") {
+      query = query.order("rating", { ascending: false });
+    }
+
+    if (tab === "new") {
+      query = query.order("created_at", { ascending: false });
+    }
+
+    if (tab === "free") {
+      query = query.eq("price", 0).order("created_at", { ascending: false });
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error(error);
+      setNotes([]);
+      return;
+    }
+
+    setNotes(data || []);
+  };
+
+  loadNotes();
+}, [tab]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">

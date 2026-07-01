@@ -2,28 +2,60 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
+import { PDFDocument } from "pdf-lib";
 import { UploadSimple, FileText } from "@phosphor-icons/react";
 
-const Field = ({ label, testId, ...props }) => (
+const Field = ({ label, ...props }) => (
   <label className="block">
     <span className="block text-xs uppercase font-bold mb-1 tracking-wide">{label}</span>
-    <input data-testid={testId} {...props} className="w-full border-2 border-black rounded-md px-3 py-2 text-sm bg-white" />
+    <input {...props} className="w-full border-2 border-black rounded-md px-3 py-2 text-sm bg-white" />
   </label>
 );
+
+async function createPreviewPdf(file) {
+  const bytes = await file.arrayBuffer();
+  const fullPdf = await PDFDocument.load(bytes);
+  const previewPdf = await PDFDocument.create();
+
+  const totalPages = fullPdf.getPageCount();
+  const previewPages = Math.max(1, Math.ceil(totalPages * 0.1));
+
+  const pages = await previewPdf.copyPages(
+    fullPdf,
+    Array.from({ length: previewPages }, (_, i) => i)
+  );
+
+  pages.forEach((page) => previewPdf.addPage(page));
+
+  const previewBytes = await previewPdf.save();
+
+  return new Blob([previewBytes], { type: "application/pdf" });
+}
 
 export default function UploadPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+
   const [form, setForm] = useState({
-    title: "", description: "", subject: "", semester: 1, branch: "", college: "",
-    university: "", tags: "", price: 0, content_type: "PDF", category: "Engineering",
+    title: "",
+    description: "",
+    subject: "",
+    semester: 1,
+    branch: "",
+    college: "",
+    university: "",
+    tags: "",
+    price: 0,
   });
+
   const [file, setFile] = useState(null);
   const [thumb, setThumb] = useState(null);
-  const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
+
+  const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
 
   const submit = async (e) => {
     e.preventDefault();
+
     if (!file) return toast.error("Please attach a PDF file");
 
     setLoading(true);
@@ -35,37 +67,43 @@ export default function UploadPage() {
       const userId = userData.user.id;
       const meta = userData.user.user_metadata || {};
 
-const { error: profileError } = await supabase.from("profiles").upsert({
-  id: userId,
-  full_name: meta.full_name || "Student",
-  college_email: userData.user.email,
-  branch: meta.branch || form.branch,
-  semester: Number(meta.semester || form.semester),
-  is_verified: !!userData.user.email_confirmed_at,
-});
+      const { error: profileError } = await supabase.from("profiles").upsert({
+        id: userId,
+        full_name: meta.full_name || "Student",
+        college_email: userData.user.email,
+        branch: meta.branch || form.branch,
+        semester: Number(meta.semester || form.semester),
+        is_verified: !!userData.user.email_confirmed_at,
+      });
 
-if (profileError) {
-  console.error("Profile error:", profileError);
-  throw profileError;
-}
-      const safeFileName = `${Date.now()}-${file.name.replaceAll(" ", "-")}`;
-      const filePath = `${userId}/${safeFileName}`;
+      if (profileError) throw profileError;
 
-      const { error: uploadError } = await supabase.storage
+      const safeName = `${Date.now()}-${file.name.replaceAll(" ", "-")}`;
+      const fullPath = `${userId}/${safeName}`;
+
+      const previewBlob = await createPreviewPdf(file);
+      const previewPath = `${userId}/preview-${safeName}`;
+
+      const { error: fullUploadError } = await supabase.storage
         .from("notes")
-        .upload(filePath, file);
+        .upload(fullPath, file);
 
-      if (uploadError) throw uploadError;
+      if (fullUploadError) throw fullUploadError;
 
-      const { data: fileUrlData } = supabase.storage
-        .from("notes")
-        .getPublicUrl(filePath);
+      const { error: previewUploadError } = await supabase.storage
+        .from("previews")
+        .upload(previewPath, previewBlob);
+
+      if (previewUploadError) throw previewUploadError;
+
+      const { data: previewUrlData } = supabase.storage
+        .from("previews")
+        .getPublicUrl(previewPath);
 
       let thumbnailUrl = null;
 
       if (thumb) {
-        const safeThumbName = `${Date.now()}-${thumb.name.replaceAll(" ", "-")}`;
-        const thumbPath = `${userId}/${safeThumbName}`;
+        const thumbPath = `${userId}/${Date.now()}-${thumb.name.replaceAll(" ", "-")}`;
 
         const { error: thumbError } = await supabase.storage
           .from("thumbnails")
@@ -97,21 +135,25 @@ if (profileError) {
           branch: form.branch,
           semester: Number(form.semester),
           price: Number(form.price),
-          file_url: fileUrlData.publicUrl,
+
+          // full PDF path only, not public URL
+          file_url: fullPath,
+
+          // public 10% preview URL
+          preview_url: previewUrlData.publicUrl,
+
           thumbnail_url: thumbnailUrl,
           status: "pending",
         })
         .select()
         .single();
 
-      if (insertError) {
-  console.error("Note insert error:", insertError);
-  throw insertError;
-}
+      if (insertError) throw insertError;
 
-      toast.success("Note uploaded! Waiting for approval.");
+      toast.success("Note uploaded securely! Waiting for approval.");
       navigate(`/notes/${noteData.id}`);
     } catch (err) {
+      console.error(err);
       toast.error(err.message || "Upload failed");
     } finally {
       setLoading(false);
@@ -132,7 +174,14 @@ if (profileError) {
 
         <label className="block">
           <span className="block text-xs uppercase font-bold mb-1 tracking-wide">Description</span>
-          <textarea rows={3} value={form.description} onChange={set("description")} required placeholder="What's inside? Why is it great?" className="w-full border-2 border-black rounded-md px-3 py-2 text-sm" />
+          <textarea
+            rows={3}
+            value={form.description}
+            onChange={set("description")}
+            required
+            placeholder="What's inside? Why is it great?"
+            className="w-full border-2 border-black rounded-md px-3 py-2 text-sm"
+          />
         </label>
 
         <div className="grid sm:grid-cols-2 gap-3">
@@ -162,7 +211,8 @@ if (profileError) {
         </label>
 
         <button disabled={loading} className="w-full brutal-btn bg-[#F4FF47] py-3 rounded-md uppercase font-display text-lg flex items-center justify-center gap-2 disabled:opacity-50">
-          <UploadSimple size={20} weight="bold" /> {loading ? "Uploading..." : "Publish Note"}
+          <UploadSimple size={20} weight="bold" />
+          {loading ? "Uploading..." : "Publish Note"}
         </button>
       </form>
     </div>

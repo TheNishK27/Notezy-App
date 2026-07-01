@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import NoteCard from "@/components/NoteCard";
 import { MagnifyingGlass, FunnelSimple } from "@phosphor-icons/react";
+import { supabase } from "@/lib/supabase";
 
 const SUBJECTS = ["DSP", "Operating Systems", "DBMS", "Mathematics", "Thermodynamics", "DSA", "Microprocessors", "VLSI", "Signals and Systems", "Network Theory", "Polity", "Physics"];
 const BRANCHES = ["CSE", "ECE", "EEE", "Mechanical", "Civil", "All", "Arts"];
@@ -30,32 +31,45 @@ export default function Browse() {
     sort: searchParams.get("sort") || "recent",
   });
 
-  useEffect(() => {
-    let result = [...DEMO_NOTES];
+useEffect(() => {
+  const loadNotes = async () => {
+    let query = supabase
+      .from("notes")
+      .select("*")
+      .order("created_at", { ascending: false });
 
     if (filters.q) {
-      const q = filters.q.toLowerCase();
-      result = result.filter((n) =>
-        `${n.title} ${n.subject} ${n.college} ${n.branch}`.toLowerCase().includes(q)
-      );
+      query = query.ilike("title", `%${filters.q}%`);
     }
 
-    if (filters.college) result = result.filter((n) => n.college.toLowerCase().includes(filters.college.toLowerCase()));
-    if (filters.semester) result = result.filter((n) => String(n.semester) === String(filters.semester));
-    if (filters.branch) result = result.filter((n) => n.branch === filters.branch || n.branch === "All");
-    if (filters.subject) result = result.filter((n) => n.subject === filters.subject);
-    if (filters.category) result = result.filter((n) => n.category === filters.category);
-    if (filters.content_type) result = result.filter((n) => n.content_type === filters.content_type);
-    if (filters.free === "true") result = result.filter((n) => Number(n.price) === 0);
-    if (filters.free === "false") result = result.filter((n) => Number(n.price) > 0);
+    if (filters.semester) {
+      query = query.eq("semester", Number(filters.semester));
+    }
 
-    if (filters.sort === "rating") result.sort((a, b) => b.rating - a.rating);
-    if (filters.sort === "popular") result.sort((a, b) => b.downloads - a.downloads);
-    if (filters.sort === "price_low") result.sort((a, b) => a.price - b.price);
-    if (filters.sort === "price_high") result.sort((a, b) => b.price - a.price);
+    if (filters.branch) {
+      query = query.eq("branch", filters.branch);
+    }
 
-    setNotes(result);
-  }, [filters]);
+    if (filters.subject) {
+      query = query.ilike("subject", `%${filters.subject}%`);
+    }
+
+    if (filters.free === "true") query = query.eq("price", 0);
+    if (filters.free === "false") query = query.gt("price", 0);
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error(error);
+      setNotes([]);
+      return;
+    }
+
+    setNotes(data || []);
+  };
+
+  loadNotes();
+}, [filters]);
 
   const set = (k, v) => {
     const f = { ...filters, [k]: v };

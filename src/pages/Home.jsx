@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { api, auth } from "@/api";
 import NoteCard from "@/components/NoteCard";
 import { MagnifyingGlass, Sparkle, ArrowRight, Fire, Clock } from "@phosphor-icons/react";
-import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 const Row = ({ title, icon: Icon, accent, children, action }) => (
   <section className="space-y-4">
@@ -31,50 +30,64 @@ export default function Home() {
   const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
-  const demoNotes = [
-    {
-      id: "1",
-      title: "Digital Electronics Complete Notes",
-      subject: "Digital Electronics",
-      college: "NIT Patna",
-      branch: "ECE",
-      semester: 3,
-      price: 49,
-      rating: 4.8,
-      downloads: 120,
-    },
-    {
-      id: "2",
-      title: "Signals and Systems Short Notes",
-      subject: "Signals",
-      college: "NIT Patna",
-      branch: "ECE",
-      semester: 4,
-      price: 39,
-      rating: 4.7,
-      downloads: 95,
-    },
-  ];
-
-  setTrending(demoNotes);
-  setRecent(demoNotes);
-  setColleges([{ name: "NIT Patna", count: 2 }]);
-}, []);
-
-  const runAi = async (e) => {
-    e.preventDefault();
-    if (!aiQuery.trim()) return;
-    setAiLoading(true);
+  const loadHome = async () => {
     try {
-      const r = await api.post("/ai/search", { query: aiQuery });
-      setAiResult(r.data);
-    } catch (e) {
-      toast.error("AI search failed");
-    } finally {
-      setAiLoading(false);
+      const [{ data: recent }, { data: trending }] = await Promise.all([
+        supabase
+          .from("notes")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(8),
+
+        supabase
+          .from("notes")
+          .select("*")
+          .order("downloads", { ascending: false })
+          .limit(8),
+      ]);
+
+      setRecent(recent || []);
+      setTrending(trending || []);
+
+      const colleges = {};
+
+      [...(recent || []), ...(trending || [])].forEach((note) => {
+        if (!note.college) return;
+
+        colleges[note.college] =
+          (colleges[note.college] || 0) + 1;
+      });
+
+      setColleges(
+        Object.entries(colleges).map(([name, count]) => ({
+          name,
+          count,
+        }))
+      );
+    } catch (err) {
+      console.error(err);
     }
   };
 
+  loadHome();
+}, []);
+
+const runAi = async (e) => {
+  e.preventDefault();
+
+  if (!aiQuery.trim()) return;
+
+  const q = aiQuery.toLowerCase();
+
+  const results = [...recent, ...trending].filter((note) =>
+    `${note.title} ${note.subject} ${note.branch}`.toLowerCase().includes(q)
+  );
+
+  setAiResult({
+    keywords: aiQuery.split(" ").filter(Boolean),
+    results,
+  });
+};
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-12">
       {/* AI Search Hero */}
