@@ -13,17 +13,38 @@ import {
   ChartBar,
   UploadSimple,
   SignOut,
+  CreditCard,
 } from "@phosphor-icons/react";
 
 export default function Profile() {
   const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-    });
+    loadProfile();
   }, []);
+
+  const loadProfile = async () => {
+    const { data } = await supabase.auth.getUser();
+    const currentUser = data?.user || null;
+
+    setUser(currentUser);
+
+    if (currentUser) {
+      const { data: profileData, error } = await supabase
+        .from("profiles")
+        .select("wallet_balance,total_sales,seller_level")
+        .eq("id", currentUser.id)
+        .single();
+
+      if (error) {
+        console.error("Profile fetch error:", error);
+      }
+
+      setProfile(profileData);
+    }
+  };
 
   const onLogout = async () => {
     await supabase.auth.signOut();
@@ -39,6 +60,7 @@ export default function Profile() {
   }
 
   const meta = user.user_metadata || {};
+  const walletBalance = Number(profile?.wallet_balance || 0).toFixed(2);
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
@@ -58,8 +80,9 @@ export default function Profile() {
           </h1>
 
           <div className="text-sm text-neutral-700 mt-1">
-            {meta.college || "College not set"} · {meta.branch || "Branch not set"} · Year{" "}
-            {meta.year || "—"}, Sem {meta.semester || "—"}
+            {meta.college || "College not set"} ·{" "}
+            {meta.branch || "Branch not set"} · Year {meta.year || "—"}, Sem{" "}
+            {meta.semester || "—"}
           </div>
 
           <div className="text-sm text-neutral-600 mt-1">
@@ -71,24 +94,55 @@ export default function Profile() {
       <div className="grid sm:grid-cols-3 gap-5">
         <Info icon={Envelope} label="Email" value={user.email} />
         <Info icon={Hash} label="Roll No" value={meta.roll_number || "—"} />
-        <Info icon={GraduationCap} label="College" value={meta.college || "—"} />
+        <Info
+          icon={GraduationCap}
+          label="College"
+          value={meta.college || "—"}
+        />
       </div>
 
       <div className="bg-white border-2 border-black rounded-lg p-6 brutal-shadow">
         <h2 className="font-display text-3xl mb-4">Quick Actions</h2>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Action to="/wishlist" icon={Heart} label="Wishlist" color="#FF6B9E" />
-          <Action to="/library" icon={BookOpenText} label="Library" color="#4ADE80" />
-          <Action to="/dashboard" icon={ChartBar} label="Dashboard" color="#F4FF47" />
-          <Action to="/upload" icon={UploadSimple} label="Upload Notes" color="#4C7BF4" />
+          <Action
+            to="/wishlist"
+            icon={Heart}
+            label="Wishlist"
+            color="#FF6B9E"
+          />
+          <Action
+            to="/library"
+            icon={BookOpenText}
+            label="Library"
+            color="#4ADE80"
+          />
+          <Action
+            to="/wallet"
+            icon={CreditCard}
+            label="Wallet"
+            color="#F4FF47"
+          />
+          <Action
+            to="/dashboard"
+            icon={ChartBar}
+            label="Dashboard"
+            color="#F4FF47"
+          />
+          <Action
+            to="/upload"
+            icon={UploadSimple}
+            label="Upload Notes"
+            color="#4C7BF4"
+          />
+          
         </div>
       </div>
 
       <div className="bg-[#F4FF47] border-2 border-black rounded-lg p-6 brutal-shadow flex items-center justify-between">
         <div>
           <div className="text-xs uppercase font-bold">Wallet Balance</div>
-          <div className="font-display text-5xl mt-1">₹0</div>
+          <div className="font-display text-5xl mt-1">₹{walletBalance}</div>
           <div className="text-xs text-neutral-700 mt-1">
             Min withdrawal: ₹100
           </div>

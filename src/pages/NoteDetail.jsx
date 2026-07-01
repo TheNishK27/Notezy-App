@@ -3,6 +3,8 @@ import { useParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { Star } from "@phosphor-icons/react";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
 export default function NoteDetail() {
   const { id } = useParams();
 
@@ -63,6 +65,10 @@ export default function NoteDetail() {
         setMyReview(myReviewData);
         setRating(myReviewData.rating);
         setComment(myReviewData.comment || "");
+      } else {
+        setMyReview(null);
+        setRating(5);
+        setComment("");
       }
     }
 
@@ -151,7 +157,7 @@ export default function NoteDetail() {
 
   const buyNow = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/payments/create-order", {
+      const res = await fetch(`${API_URL}/api/payments/create-order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ note_id: note.id }),
@@ -176,20 +182,26 @@ export default function NoteDetail() {
         name: "Notezy",
         description: note.title,
         order_id: data.order_id,
+
         handler: async function (response) {
           const { data: userData } = await supabase.auth.getUser();
+          const { data: sessionData } = await supabase.auth.getSession();
 
-          if (!userData?.user) {
+          const token = sessionData?.session?.access_token;
+
+          if (!userData?.user || !token) {
             alert("Please login first.");
             return;
           }
 
-          const verifyRes = await fetch("http://127.0.0.1:8000/api/payments/verify", {
+          const verifyRes = await fetch(`${API_URL}/api/payments/verify`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
             body: JSON.stringify({
               note_id: note.id,
-              buyer_id: userData.user.id,
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
@@ -206,10 +218,12 @@ export default function NoteDetail() {
           alert("Payment successful! Note unlocked in Library.");
           loadPage();
         },
+
         prefill: {
           name: "Student",
-          email: "",
+          email: user?.email || "",
         },
+
         theme: {
           color: "#F4FF47",
         },
@@ -222,12 +236,57 @@ export default function NoteDetail() {
     }
   };
 
+const payWithWallet = async () => {
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData?.session?.access_token;
+
+    if (!token) {
+      alert("Please login first.");
+      return;
+    }
+
+    const res = await fetch(`${API_URL}/api/wallet/pay`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        note_id: note.id,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.detail || "Wallet payment failed");
+      return;
+    }
+
+    alert("Purchased successfully using Wallet!");
+
+    loadPage();
+  } catch (err) {
+    console.error(err);
+    alert(err.message || "Wallet payment failed");
+  }
+};
+
   if (loading) {
-    return <div className="max-w-5xl mx-auto p-10 font-display text-3xl">Loading...</div>;
+    return (
+      <div className="max-w-5xl mx-auto p-10 font-display text-3xl">
+        Loading...
+      </div>
+    );
   }
 
   if (!note) {
-    return <div className="max-w-5xl mx-auto p-10 font-display text-3xl">Note not found</div>;
+    return (
+      <div className="max-w-5xl mx-auto p-10 font-display text-3xl">
+        Note not found
+      </div>
+    );
   }
 
   return (
@@ -261,10 +320,18 @@ export default function NoteDetail() {
           <p className="text-neutral-700">{note.description}</p>
 
           <div className="space-y-2">
-            <p><b>Subject:</b> {note.subject}</p>
-            <p><b>Branch:</b> {note.branch}</p>
-            <p><b>Semester:</b> {note.semester}</p>
-            <p><b>Price:</b> ₹{note.price}</p>
+            <p>
+              <b>Subject:</b> {note.subject}
+            </p>
+            <p>
+              <b>Branch:</b> {note.branch}
+            </p>
+            <p>
+              <b>Semester:</b> {note.semester}
+            </p>
+            <p>
+              <b>Price:</b> ₹{note.price}
+            </p>
           </div>
 
           <button
@@ -275,17 +342,27 @@ export default function NoteDetail() {
           </button>
 
           <p className="text-xs text-neutral-500">
-            Only a small preview of this note is available. Purchase to unlock the full PDF.
+            Only a small preview of this note is available. Purchase to unlock
+            the full PDF.
           </p>
 
           {!hasPurchased && (
-            <button
-              onClick={buyNow}
-              className="block mt-4 brutal-btn bg-[#F4FF47] px-6 py-3 rounded-md"
-            >
-              Buy Now
-            </button>
-          )}
+  <div className="flex flex-col gap-3 mt-4">
+    <button
+      onClick={payWithWallet}
+      className="brutal-btn bg-[#4ADE80] px-6 py-3 rounded-md font-bold"
+    >
+      💰 Pay with Wallet
+    </button>
+
+    <button
+      onClick={buyNow}
+      className="brutal-btn bg-[#F4FF47] px-6 py-3 rounded-md font-bold"
+    >
+      💳 Pay with Razorpay
+    </button>
+  </div>
+)}
 
           {hasPurchased && (
             <div className="font-bold text-green-700">
@@ -361,9 +438,7 @@ export default function NoteDetail() {
                   {"☆".repeat(5 - r.rating)}
                 </div>
 
-                <p className="text-sm mt-1">
-                  {r.comment || "No comment"}
-                </p>
+                <p className="text-sm mt-1">{r.comment || "No comment"}</p>
 
                 <div className="text-xs text-neutral-500 mt-1">
                   {new Date(r.created_at).toLocaleDateString()}

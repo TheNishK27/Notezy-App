@@ -3,6 +3,8 @@ import { BookOpenText, DownloadSimple } from "@phosphor-icons/react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
 export default function Library() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -43,20 +45,23 @@ export default function Library() {
       setDownloadingId(noteId);
 
       const { data: auth } = await supabase.auth.getUser();
+      const { data: sessionData } = await supabase.auth.getSession();
 
-      if (!auth.user) {
+      const token = sessionData?.session?.access_token;
+
+      if (!auth.user || !token) {
         toast.error("Please login first");
         return;
       }
 
-      const res = await fetch("http://127.0.0.1:8000/api/download", {
+      const res = await fetch(`${API_URL}/api/download`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           note_id: noteId,
-          user_id: auth.user.id,
         }),
       });
 
@@ -110,9 +115,7 @@ export default function Library() {
               key={note.id}
               className="bg-white border-2 border-black rounded-xl p-5 shadow-[4px_4px_0px_#000]"
             >
-              <h2 className="font-display text-2xl mb-2">
-                {note.title}
-              </h2>
+              <h2 className="font-display text-2xl mb-2">{note.title}</h2>
 
               <p className="text-sm text-neutral-600 mb-4">
                 {note.description || "Purchased note"}

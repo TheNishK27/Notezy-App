@@ -9,6 +9,7 @@ import {
 import { Toaster } from "sonner";
 import { supabase } from "@/lib/supabase";
 import "@/App.css";
+import WalletPage from "@/pages/Wallet";
 
 import Nav from "@/components/Nav";
 import Landing from "@/pages/Landing";
@@ -141,7 +142,14 @@ function App() {
               </Protected>
             }
           />
-
+          <Route
+  path="/wallet"
+  element={
+    <Protected>
+      <WalletPage />
+    </Protected>
+  }
+/>
           <Route
             path="/wishlist"
             element={
