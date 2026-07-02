@@ -4,8 +4,9 @@ import { supabase } from "@/lib/supabase";
 import { Star } from "@phosphor-icons/react";
 
 const API_URL = import.meta.env.VITE_API_URL;
-console.log("VITE_API_URL =", import.meta.env.VITE_API_URL);
-console.log("API_URL =", API_URL);
+console.log("MODE:", import.meta.env.MODE);
+console.log("VITE_API_URL:", import.meta.env.VITE_API_URL);
+console.log("API_URL:", API_URL);
 
 export default function NoteDetail() {
   const { id } = useParams();
