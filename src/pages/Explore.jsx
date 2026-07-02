@@ -3,53 +3,6 @@ import NoteCard from "@/components/NoteCard";
 import { Compass, Fire, Star, Clock } from "@phosphor-icons/react";
 import { supabase } from "@/lib/supabase";
 
-const DEMO_NOTES = [
-  {
-    id: "1",
-    title: "Digital Electronics Complete Notes",
-    subject: "Digital Electronics",
-    college: "NIT Patna",
-    branch: "ECE",
-    semester: 3,
-    price: 49,
-    rating: 4.8,
-    downloads: 120,
-  },
-  {
-    id: "2",
-    title: "Signals & Systems Handwritten Notes",
-    subject: "Signals and Systems",
-    college: "NIT Patna",
-    branch: "ECE",
-    semester: 4,
-    price: 39,
-    rating: 4.7,
-    downloads: 95,
-  },
-  {
-    id: "3",
-    title: "DBMS Complete Guide",
-    subject: "DBMS",
-    college: "IIT Delhi",
-    branch: "CSE",
-    semester: 5,
-    price: 59,
-    rating: 4.9,
-    downloads: 240,
-  },
-  {
-    id: "4",
-    title: "Engineering Maths PYQs",
-    subject: "Mathematics",
-    college: "NIT Patna",
-    branch: "All",
-    semester: 2,
-    price: 0,
-    rating: 4.5,
-    downloads: 180,
-  },
-];
-
 const Pill = ({ active, onClick, children }) => (
   <button
     onClick={onClick}
@@ -66,15 +19,21 @@ export default function Explore() {
   const [notes, setNotes] = useState([]);
 
   useEffect(() => {
+    loadNotes();
+  }, [tab]);
+
   const loadNotes = async () => {
-    let query = supabase.from("notes").select("*");
+    let query = supabase
+      .from("notes")
+      .select("*")
+      .eq("status", "approved");
 
     if (tab === "trending") {
       query = query.order("downloads", { ascending: false });
     }
 
     if (tab === "top") {
-      query = query.order("rating", { ascending: false });
+      query = query.order("rating_avg", { ascending: false });
     }
 
     if (tab === "new") {
@@ -95,9 +54,6 @@ export default function Explore() {
 
     setNotes(data || []);
   };
-
-  loadNotes();
-}, [tab]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -136,17 +92,26 @@ export default function Explore() {
         </Pill>
       </div>
 
-      <div className="columns-1 sm:columns-2 lg:columns-3 gap-5 space-y-5">
-        {notes.map((note, i) => (
-          <div
-            key={note.id}
-            className="break-inside-avoid"
-            style={{ transform: `rotate(${(i % 3 - 1) * 0.4}deg)` }}
-          >
-            <NoteCard note={note} />
+      {notes.length > 0 ? (
+        <div className="columns-1 sm:columns-2 lg:columns-3 gap-5 space-y-5">
+          {notes.map((note, index) => (
+            <div
+              key={note.id}
+              className="break-inside-avoid"
+              style={{ transform: `rotate(${(index % 3 - 1) * 0.4}deg)` }}
+            >
+              <NoteCard note={note} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white border-2 border-dashed border-black rounded-lg p-10 text-center">
+          <div className="font-display text-2xl">No approved notes yet</div>
+          <div className="text-sm text-neutral-600 mt-2">
+            Approved notes will appear here after admin review.
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
