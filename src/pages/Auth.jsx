@@ -66,6 +66,7 @@ export default function Auth() {
               year: Number(form.year),
               semester: Number(form.semester),
             },
+            emailRedirectTo: `${window.location.origin}/auth`,
           },
         });
 
@@ -75,18 +76,18 @@ export default function Auth() {
         setMode("login");
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
-  email: form.email,
-  password: form.password,
-});
+          email: form.email,
+          password: form.password,
+        });
 
-if (error) throw error;
+        if (error) throw error;
 
-if (!data.session) {
-  throw new Error("Please verify your email first.");
-}
+        if (!data.session) {
+          throw new Error("Please verify your email first.");
+        }
 
-toast.success("Logged in successfully");
-navigate("/home", { replace: true });
+        toast.success("Logged in successfully");
+        navigate("/home", { replace: true });
       }
     } catch (err) {
       toast.error(err.message || "Something went wrong");
@@ -102,9 +103,11 @@ navigate("/home", { replace: true });
           <div className="inline-flex items-center gap-2 bg-white border-2 border-black px-3 py-1 rounded-full brutal-shadow-sm text-xs uppercase font-bold">
             <ShieldCheck size={14} weight="bold" /> Verified Students Only
           </div>
+
           <h1 className="font-display text-6xl mt-6 leading-[0.95]">
             Welcome to the campus that earns.
           </h1>
+
           <p className="text-neutral-800 mt-4 max-w-md">
             Sign up with your college email. Supabase will send a verification
             link. No fakes. No spam. Just real notes from real students.
@@ -115,6 +118,7 @@ navigate("/home", { replace: true });
           <div className="font-mono text-xs uppercase text-neutral-600">
             Latest Earner
           </div>
+
           <div className="font-display text-2xl mt-1">
             Priya from IIT-B made ₹2,340 this week
           </div>
@@ -234,17 +238,25 @@ navigate("/home", { replace: true });
             minLength={6}
           />
 
+          {mode === "login" && (
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={() => navigate("/forgot-password")}
+                className="text-xs underline font-bold"
+              >
+                Forgot password?
+              </button>
+            </div>
+          )}
+
           <button
             type="submit"
             data-testid="auth-submit"
             disabled={loading}
             className="w-full brutal-btn bg-black text-white py-3 rounded-md uppercase font-display text-lg flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {loading
-              ? "..."
-              : mode === "login"
-              ? "Sign In"
-              : "Create Account"}
+            {loading ? "..." : mode === "login" ? "Sign In" : "Create Account"}
             <ArrowRight size={18} weight="bold" />
           </button>
 

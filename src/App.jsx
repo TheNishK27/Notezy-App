@@ -1,29 +1,41 @@
 import React, { useEffect, useState } from "react";
 import {
   BrowserRouter,
-  Routes,
-  Route,
   Navigate,
+  Route,
+  Routes,
   useLocation,
 } from "react-router-dom";
 import { Toaster } from "sonner";
-import { supabase } from "@/lib/supabase";
+
 import "@/App.css";
-import WalletPage from "@/pages/WalletPage";
+import { supabase } from "@/lib/supabase";
+
 import Nav from "@/components/Nav";
+
 import Landing from "@/pages/Landing";
 import Auth from "@/pages/Auth";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
+
 import Home from "@/pages/Home";
 import Browse from "@/pages/Browse";
 import Explore from "@/pages/Explore";
 import NoteDetail from "@/pages/NoteDetail";
+
 import Library from "@/pages/Library";
 import Wishlist from "@/pages/Wishlist";
+import WalletPage from "@/pages/WalletPage";
+
 import UploadPage from "@/pages/Upload";
 import SellerDashboard from "@/pages/SellerDashboard";
 import Profile from "@/pages/Profile";
 import CheckoutSuccess from "@/pages/CheckoutSuccess";
 import AdminDashboard from "@/pages/AdminDashboard";
+
+function LoadingScreen({ text = "Loading..." }) {
+  return <div className="p-8 font-bold">{text}</div>;
+}
 
 function Protected({ children }) {
   const location = useLocation();
@@ -43,10 +55,12 @@ function Protected({ children }) {
       }
     );
 
-    return () => listener.subscription.unsubscribe();
+    return () => {
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
-  if (loading) return <div className="p-8 font-bold">Loading...</div>;
+  if (loading) return <LoadingScreen />;
 
   if (!session) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
@@ -60,7 +74,7 @@ function AdminProtected({ children }) {
   const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
-    const checkAdmin = async () => {
+    const checkAdminAccess = async () => {
       const { data: userData } = await supabase.auth.getUser();
       const user = userData?.user;
 
@@ -80,22 +94,23 @@ function AdminProtected({ children }) {
       setLoading(false);
     };
 
-    checkAdmin();
+    checkAdminAccess();
   }, []);
 
-  if (loading) {
-    return <div className="p-8 font-bold">Checking admin access...</div>;
-  }
+  if (loading) return <LoadingScreen text="Checking admin access..." />;
 
   if (!allowed) return <Navigate to="/home" replace />;
 
   return children;
 }
 
+const protectedRoute = (page) => <Protected>{page}</Protected>;
+
 function Shell({ children }) {
   return (
     <div className="App min-h-screen bg-[#FAFAFA] text-[#050505]">
       <Nav />
+
       <main>{children}</main>
 
       <Toaster
@@ -103,8 +118,8 @@ function Shell({ children }) {
         toastOptions={{
           className: "border-2 border-black rounded-lg font-medium",
           style: {
-            boxShadow: "4px 4px 0 0 #050505",
             background: "#fff",
+            boxShadow: "4px 4px 0 0 #050505",
           },
         }}
       />
@@ -112,100 +127,59 @@ function Shell({ children }) {
   );
 }
 
-function App() {
+function AppRoutes() {
+  return (
+    <Routes>
+      {/* Public */}
+      <Route path="/" element={<Landing />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+
+      {/* Discovery */}
+      <Route path="/browse" element={<Browse />} />
+      <Route path="/explore" element={<Explore />} />
+      <Route path="/notes/:id" element={<NoteDetail />} />
+
+      {/* User */}
+      <Route path="/home" element={protectedRoute(<Home />)} />
+      <Route path="/library" element={protectedRoute(<Library />)} />
+      <Route path="/wishlist" element={protectedRoute(<Wishlist />)} />
+      <Route path="/wallet" element={protectedRoute(<WalletPage />)} />
+      <Route path="/profile" element={protectedRoute(<Profile />)} />
+
+      {/* Seller */}
+      <Route path="/upload" element={protectedRoute(<UploadPage />)} />
+      <Route path="/dashboard" element={protectedRoute(<SellerDashboard />)} />
+
+      {/* Checkout */}
+      <Route
+        path="/checkout/success"
+        element={protectedRoute(<CheckoutSuccess />)}
+      />
+
+      {/* Admin */}
+      <Route
+        path="/admin"
+        element={
+          <AdminProtected>
+            <AdminDashboard />
+          </AdminProtected>
+        }
+      />
+
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+export default function App() {
   return (
     <BrowserRouter>
       <Shell>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/auth" element={<Auth />} />
-
-          <Route
-            path="/home"
-            element={
-              <Protected>
-                <Home />
-              </Protected>
-            }
-          />
-
-          <Route path="/browse" element={<Browse />} />
-          <Route path="/explore" element={<Explore />} />
-          <Route path="/notes/:id" element={<NoteDetail />} />
-
-          <Route
-            path="/library"
-            element={
-              <Protected>
-                <Library />
-              </Protected>
-            }
-          />
-          <Route
-  path="/wallet"
-  element={
-    <Protected>
-      <WalletPage />
-    </Protected>
-  }
-/>
-          <Route
-            path="/wishlist"
-            element={
-              <Protected>
-                <Wishlist />
-              </Protected>
-            }
-          />
-
-          <Route
-            path="/upload"
-            element={
-              <Protected>
-                <UploadPage />
-              </Protected>
-            }
-          />
-
-          <Route
-            path="/dashboard"
-            element={
-              <Protected>
-                <SellerDashboard />
-              </Protected>
-            }
-          />
-
-          <Route
-            path="/profile"
-            element={
-              <Protected>
-                <Profile />
-              </Protected>
-            }
-          />
-
-          <Route
-            path="/checkout/success"
-            element={
-              <Protected>
-                <CheckoutSuccess />
-              </Protected>
-            }
-          />
-
-          <Route
-            path="/admin"
-            element={
-              <AdminProtected>
-                <AdminDashboard />
-              </AdminProtected>
-            }
-          />
-        </Routes>
+        <AppRoutes />
       </Shell>
     </BrowserRouter>
   );
 }
-
-export default App;
