@@ -33,11 +33,35 @@ export default function NoteDetail() {
     const currentUser = userData?.user || null;
     setUser(currentUser);
 
-    const { data: noteData, error: noteError } = await supabase
-      .from("notes")
-      .select("*")
-      .eq("id", id)
-      .single();
+    const { data: userData } = await supabase.auth.getUser();
+const currentUser = userData?.user || null;
+setUser(currentUser);
+
+let noteQuery = supabase
+  .from("notes")
+  .select("*")
+  .eq("id", id);
+
+if (!currentUser) {
+  noteQuery = noteQuery.eq("status", "approved");
+} else {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", currentUser.id)
+    .single();
+
+  const isAdmin = profile?.is_admin === true;
+
+  if (!isAdmin) {
+    noteQuery = noteQuery.or(
+      `status.eq.approved,seller_id.eq.${currentUser.id}`
+    );
+  }
+}
+
+const { data: noteData, error: noteError } =
+  await noteQuery.single();
 
     if (noteError) {
       console.error(noteError);
