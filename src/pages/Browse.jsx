@@ -1,25 +1,34 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import NoteCard from "@/components/NoteCard";
-import { MagnifyingGlass, FunnelSimple } from "@phosphor-icons/react";
+import { MagnifyingGlass, FunnelSimple, X } from "@phosphor-icons/react";
 import { supabase } from "@/lib/supabase";
 
 const SUBJECTS = [
-  "DSP",
-  "Operating Systems",
-  "DBMS",
-  "Mathematics",
-  "Thermodynamics",
-  "DSA",
-  "Microprocessors",
+  "Engineering Mathematics",
+  "Engineering Physics",
+  "Engineering Chemsitry",
+  "Data Structures and Algorithms",
+  "Database Management System",
+  "Microprocessors and Microcontroller",
   "VLSI",
   "Signals and Systems",
   "Network Theory",
   "Polity",
-  "Physics",
 ];
 
-const BRANCHES = ["CSE", "ECE", "EEE", "Mechanical", "Civil", "All", "Arts"];
+const BRANCHES = [
+  "Computer Science and Engineering",
+  "Electronics and Communication Engineering",
+  "Electrical Engineering",
+  "Mechanical Engineering",
+  "Civil Engineering",
+  "Architecture and Planning",
+  "Mathematics and Computing",
+  "Chemical Science and Technology",
+  "Mechatronics and Automation Engineering",
+  "Master of Computer Applications",
+];
 
 const CATEGORIES = [
   "Engineering",
@@ -36,6 +45,7 @@ const TYPES = ["PDF", "Handwritten", "Typed", "PYQ"];
 export default function Browse() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [notes, setNotes] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const [filters, setFilters] = useState({
     q: searchParams.get("q") || "",
@@ -45,7 +55,8 @@ export default function Browse() {
     subject: searchParams.get("subject") || "",
     category: searchParams.get("category") || "",
     content_type: searchParams.get("content_type") || "",
-    free: searchParams.get("free") || "",
+    price: searchParams.get("price") || "",
+    featured: searchParams.get("featured") || "",
     sort: searchParams.get("sort") || "recent",
   });
 
@@ -54,13 +65,15 @@ export default function Browse() {
   }, [filters]);
 
   const loadNotes = async () => {
-    let query = supabase
-      .from("notes")
-      .select("*")
-      .eq("status", "approved");
+    setLoading(true);
 
-    if (filters.q) {
-      query = query.ilike("title", `%${filters.q}%`);
+    let query = supabase.from("notes").select("*").eq("status", "approved");
+
+    if (filters.q.trim()) {
+      const q = filters.q.trim();
+      query = query.or(
+        `title.ilike.%${q}%,description.ilike.%${q}%,subject.ilike.%${q}%,branch.ilike.%${q}%,college.ilike.%${q}%`
+      );
     }
 
     if (filters.college) {
@@ -87,12 +100,16 @@ export default function Browse() {
       query = query.eq("content_type", filters.content_type);
     }
 
-    if (filters.free === "true") {
+    if (filters.price === "free") {
       query = query.eq("price", 0);
     }
 
-    if (filters.free === "false") {
+    if (filters.price === "paid") {
       query = query.gt("price", 0);
+    }
+
+    if (filters.featured === "true") {
+      query = query.eq("featured", true);
     }
 
     if (filters.sort === "popular") {
@@ -112,10 +129,11 @@ export default function Browse() {
     if (error) {
       console.error(error);
       setNotes([]);
-      return;
+    } else {
+      setNotes(data || []);
     }
 
-    setNotes(data || []);
+    setLoading(false);
   };
 
   const set = (key, value) => {
@@ -125,10 +143,28 @@ export default function Browse() {
     const params = new URLSearchParams();
 
     Object.entries(updatedFilters).forEach(([k, v]) => {
-      if (v) params.set(k, v);
+      if (v && v !== "recent") params.set(k, v);
     });
 
     setSearchParams(params);
+  };
+
+  const clearFilters = () => {
+    const reset = {
+      q: "",
+      college: "",
+      semester: "",
+      branch: "",
+      subject: "",
+      category: "",
+      content_type: "",
+      price: "",
+      featured: "",
+      sort: "recent",
+    };
+
+    setFilters(reset);
+    setSearchParams({});
   };
 
   return (
@@ -143,18 +179,30 @@ export default function Browse() {
 
       <div className="grid lg:grid-cols-12 gap-6">
         <aside className="lg:col-span-3 bg-white border-2 border-black rounded-lg p-5 brutal-shadow space-y-4 h-fit sticky top-24">
-          <div className="flex items-center gap-2 font-display text-xl">
-            <FunnelSimple size={20} weight="bold" /> Filters
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 font-display text-xl">
+              <FunnelSimple size={20} weight="bold" /> Filters
+            </div>
+
+            <button
+              onClick={clearFilters}
+              className="text-xs font-bold underline flex items-center gap-1"
+            >
+              <X size={12} /> Clear
+            </button>
           </div>
 
-          <div className="flex items-center gap-2 border-2 border-black rounded-md px-3 py-2 bg-white">
-            <MagnifyingGlass size={14} />
-            <input
-              placeholder="Search keywords..."
-              value={filters.q}
-              onChange={(e) => set("q", e.target.value)}
-              className="w-full text-sm outline-none"
-            />
+          <div>
+            <div className="text-xs uppercase font-bold mb-1">Search</div>
+            <div className="flex items-center gap-2 border-2 border-black rounded-md px-3 py-2 bg-white">
+              <MagnifyingGlass size={14} />
+              <input
+                placeholder="Title, subject, branch..."
+                value={filters.q}
+                onChange={(e) => set("q", e.target.value)}
+                className="w-full text-sm outline-none"
+              />
+            </div>
           </div>
 
           <Select
@@ -185,6 +233,23 @@ export default function Browse() {
             options={TYPES}
           />
 
+          <Select
+            label="Price"
+            value={filters.price}
+            onChange={(v) => set("price", v)}
+            options={[
+              { label: "Free", value: "free" },
+              { label: "Paid", value: "paid" },
+            ]}
+          />
+
+          <Select
+            label="Featured"
+            value={filters.featured}
+            onChange={(v) => set("featured", v)}
+            options={[{ label: "Featured only", value: "true" }]}
+          />
+
           <div>
             <div className="text-xs uppercase font-bold mb-1">Semester</div>
             <input
@@ -201,7 +266,7 @@ export default function Browse() {
           <div>
             <div className="text-xs uppercase font-bold mb-1">College</div>
             <input
-              placeholder="e.g. NIT Patna"
+              placeholder="NIT Patna"
               value={filters.college}
               onChange={(e) => set("college", e.target.value)}
               className="w-full border-2 border-black rounded-md px-3 py-2 text-sm"
@@ -212,13 +277,21 @@ export default function Browse() {
             label="Sort by"
             value={filters.sort}
             onChange={(v) => set("sort", v)}
-            options={["recent", "rating", "popular", "price_low", "price_high"]}
+            options={[
+              { label: "Newest", value: "recent" },
+              { label: "Most popular", value: "popular" },
+              { label: "Highest rated", value: "rating" },
+              { label: "Price: Low to High", value: "price_low" },
+              { label: "Price: High to Low", value: "price_high" },
+            ]}
           />
         </aside>
 
         <div className="lg:col-span-9">
-          <div className="text-sm font-bold uppercase text-neutral-700 mb-3">
-            {notes.length} approved notes found
+          <div className="flex justify-between items-center mb-3">
+            <div className="text-sm font-bold uppercase text-neutral-700">
+              {loading ? "Searching..." : `${notes.length} approved notes found`}
+            </div>
           </div>
 
           {notes.length > 0 ? (
@@ -230,7 +303,7 @@ export default function Browse() {
           ) : (
             <div className="bg-white border-2 border-dashed border-black rounded-lg p-10 text-center">
               <div className="font-display text-2xl">
-                No approved notes match these filters
+                {loading ? "Loading notes..." : "No approved notes match these filters"}
               </div>
               <div className="text-sm text-neutral-600 mt-2">
                 Try removing some filters or changing keywords.
@@ -253,11 +326,19 @@ const Select = ({ label, value, onChange, options }) => (
       className="w-full border-2 border-black rounded-md px-3 py-2 text-sm bg-white"
     >
       <option value="">Any</option>
-      {options.map((option) => (
-        <option key={option} value={option}>
-          {option}
-        </option>
-      ))}
+
+      {options.map((option) => {
+        const isObject = typeof option === "object";
+
+        return (
+          <option
+            key={isObject ? option.value : option}
+            value={isObject ? option.value : option}
+          >
+            {isObject ? option.label : option}
+          </option>
+        );
+      })}
     </select>
   </div>
 );

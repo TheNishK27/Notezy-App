@@ -11,9 +11,9 @@ const Marquee = () => (
           <span>★ Verified Students</span>
           <span>★ Real College Notes</span>
           <span>★ Earn While You Learn</span>
-          <span>★ 90/10 Revenue Split</span>
+          <span>★ Best Revenue Split</span>
           <span>★ AI-Powered Search</span>
-          <span>★ NIT · IIT · BITS · DU · VIT</span>
+          <span>★ IIT · NIT · IIIT · BITS · VIT </span>
         </div>
       ))}
     </div>
@@ -96,7 +96,7 @@ export default function Landing() {
           {[
             { i: GraduationCap, t: "1. Verify with college email", d: "Sign up with your @nitp.ac.in / @iitb.ac.in. We send an OTP. Verified-only access keeps fakes out." },
             { i: BookOpenText, t: "2. Buy quality notes", d: "Discover topper notes, PYQs, handwritten gems. Filter by college, subject, semester, branch." },
-            { i: Wallet, t: "3. Sell yours. Earn 90%", d: "Upload your notes. Set price ₹10-₹100. Get 90% of every sale instantly in your wallet." },
+            { i: Wallet, t: "3. Sell yours. Earn upto 90%", d: "Upload your notes. Set price ₹10-₹100. Get 90% of every sale instantly in your wallet." },
           ].map((s, i) => (
             <div key={i} className="bg-white border-2 border-black rounded-lg p-6 brutal-shadow space-y-3">
               <div className="w-12 h-12 border-2 border-black rounded-md flex items-center justify-center bg-[#4ADE80]">
@@ -131,7 +131,7 @@ export default function Landing() {
             </div>
             <div className="md:col-span-4 bg-[#4C7BF4] text-white border-2 border-black rounded-lg p-6 brutal-shadow">
               <Wallet size={28} weight="fill" />
-              <h3 className="font-display text-3xl mt-3 mb-2">You keep 90%.</h3>
+              <h3 className="font-display text-3xl mt-3 mb-2">You keep upto 90%.</h3>
               <p>The fairest split in the game. Withdraw to UPI/Bank when you cross ₹100.</p>
             </div>
           </div>
