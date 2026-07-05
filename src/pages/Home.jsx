@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Fire,
   Clock,
+  Star,
 } from "@phosphor-icons/react";
 import { supabase } from "@/lib/supabase";
 
@@ -34,6 +35,7 @@ const Row = ({ title, icon: Icon, accent, children, action }) => (
 export default function Home() {
   const user = { name: "Student" };
 
+  const [featured, setFeatured] = useState([]);
   const [trending, setTrending] = useState([]);
   const [recent, setRecent] = useState([]);
   const [colleges, setColleges] = useState([]);
@@ -48,8 +50,16 @@ export default function Home() {
 
   const loadHome = async () => {
     try {
-      const [{ data: recentNotes }, { data: trendingNotes }] =
+      const [{ data: featuredNotes }, { data: recentNotes }, { data: trendingNotes }] =
         await Promise.all([
+          supabase
+            .from("notes")
+            .select("*")
+            .eq("status", "approved")
+            .eq("featured", true)
+            .order("created_at", { ascending: false })
+            .limit(8),
+
           supabase
             .from("notes")
             .select("*")
@@ -65,12 +75,17 @@ export default function Home() {
             .limit(8),
         ]);
 
+      setFeatured(featuredNotes || []);
       setRecent(recentNotes || []);
       setTrending(trendingNotes || []);
 
       const collegeMap = {};
 
-      [...(recentNotes || []), ...(trendingNotes || [])].forEach((note) => {
+      [
+        ...(featuredNotes || []),
+        ...(recentNotes || []),
+        ...(trendingNotes || []),
+      ].forEach((note) => {
         if (!note.college) return;
         collegeMap[note.college] = (collegeMap[note.college] || 0) + 1;
       });
@@ -94,7 +109,7 @@ export default function Home() {
     setAiLoading(true);
 
     const query = aiQuery.toLowerCase();
-    const allNotes = [...recent, ...trending];
+    const allNotes = [...featured, ...recent, ...trending];
 
     const uniqueNotes = Array.from(
       new Map(allNotes.map((note) => [note.id, note])).values()
@@ -182,6 +197,32 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      <Row
+        title="Featured Notes"
+        icon={Star}
+        accent="#F4FF47"
+        action={
+          <Link
+            to="/browse?featured=true"
+            className="text-sm font-bold uppercase flex items-center gap-1 hover:underline"
+          >
+            View all <ArrowRight size={14} />
+          </Link>
+        }
+      >
+        {featured.length > 0 ? (
+          <div className="flex gap-5 overflow-x-auto no-scrollbar pb-3 -mx-1 px-1">
+            {featured.map((note) => (
+              <div key={note.id} className="min-w-[280px] max-w-[280px]">
+                <NoteCard note={note} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState text="No featured notes yet. Mark notes as featured from Admin Dashboard." />
+        )}
+      </Row>
 
       <Row
         title="Trending now"

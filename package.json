@@ -14,8 +14,10 @@
     "@supabase/supabase-js": "^2.109.0",
     "axios": "^1.18.1",
     "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.1.200",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "react-pdf": "^10.4.1",
     "react-router-dom": "^7.18.1",
     "sonner": "^2.0.7"
   },

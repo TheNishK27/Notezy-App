@@ -7,8 +7,13 @@ import { UploadSimple, FileText } from "@phosphor-icons/react";
 
 const Field = ({ label, ...props }) => (
   <label className="block">
-    <span className="block text-xs uppercase font-bold mb-1 tracking-wide">{label}</span>
-    <input {...props} className="w-full border-2 border-black rounded-md px-3 py-2 text-sm bg-white" />
+    <span className="block text-xs uppercase font-bold mb-1 tracking-wide">
+      {label}
+    </span>
+    <input
+      {...props}
+      className="w-full border-2 border-black rounded-md px-3 py-2 text-sm bg-white"
+    />
   </label>
 );
 
@@ -18,7 +23,9 @@ async function createPreviewPdf(file) {
   const previewPdf = await PDFDocument.create();
 
   const totalPages = fullPdf.getPageCount();
-  const previewPages = Math.max(1, Math.ceil(totalPages * 0.1));
+
+  // Show max 3 pages, but at least 1 page
+  const previewPages = Math.min(3, Math.max(1, totalPages));
 
   const pages = await previewPdf.copyPages(
     fullPdf,
@@ -51,48 +58,64 @@ export default function UploadPage() {
   const [file, setFile] = useState(null);
   const [thumb, setThumb] = useState(null);
 
-  const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
+  const set = (key) => (e) =>
+    setForm({ ...form, [key]: e.target.value });
 
   const submit = async (e) => {
     e.preventDefault();
 
-    if (!file) return toast.error("Please attach a PDF file");
+    if (!file) {
+      toast.error("Please attach a PDF file");
+      return;
+    }
 
     setLoading(true);
 
     try {
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData.user) throw new Error("Please login first");
+      const { data: userData, error: userError } =
+        await supabase.auth.getUser();
+
+      if (userError || !userData.user) {
+        throw new Error("Please login first");
+      }
 
       const userId = userData.user.id;
       const meta = userData.user.user_metadata || {};
 
-      const { error: profileError } = await supabase.from("profiles").upsert({
-        id: userId,
-        full_name: meta.full_name || "Student",
-        college_email: userData.user.email,
-        branch: meta.branch || form.branch,
-        semester: Number(meta.semester || form.semester),
-        is_verified: !!userData.user.email_confirmed_at,
-      });
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .upsert({
+          id: userId,
+          full_name: meta.full_name || "Student",
+          college_email: userData.user.email,
+          branch: meta.branch || form.branch,
+          semester: Number(meta.semester || form.semester),
+          is_verified: !!userData.user.email_confirmed_at,
+        });
 
       if (profileError) throw profileError;
 
       const safeName = `${Date.now()}-${file.name.replaceAll(" ", "-")}`;
       const fullPath = `${userId}/${safeName}`;
+      const previewPath = `${userId}/preview-${safeName}`;
 
       const previewBlob = await createPreviewPdf(file);
-      const previewPath = `${userId}/preview-${safeName}`;
 
       const { error: fullUploadError } = await supabase.storage
         .from("notes")
-        .upload(fullPath, file);
+        .upload(fullPath, file, {
+          contentType: "application/pdf",
+          upsert: false,
+        });
 
       if (fullUploadError) throw fullUploadError;
 
       const { error: previewUploadError } = await supabase.storage
         .from("previews")
-        .upload(previewPath, previewBlob);
+        .upload(previewPath, previewBlob, {
+          contentType: "application/pdf",
+          upsert: false,
+        });
 
       if (previewUploadError) throw previewUploadError;
 
@@ -103,11 +126,17 @@ export default function UploadPage() {
       let thumbnailUrl = null;
 
       if (thumb) {
-        const thumbPath = `${userId}/${Date.now()}-${thumb.name.replaceAll(" ", "-")}`;
+        const thumbPath = `${userId}/${Date.now()}-${thumb.name.replaceAll(
+          " ",
+          "-"
+        )}`;
 
         const { error: thumbError } = await supabase.storage
           .from("thumbnails")
-          .upload(thumbPath, thumb);
+          .upload(thumbPath, thumb, {
+            contentType: thumb.type,
+            upsert: false,
+          });
 
         if (thumbError) throw thumbError;
 
@@ -122,7 +151,7 @@ export default function UploadPage() {
         .from("colleges")
         .select("id")
         .ilike("name", form.college)
-        .single();
+        .maybeSingle();
 
       const { data: noteData, error: insertError } = await supabase
         .from("notes")
@@ -136,11 +165,11 @@ export default function UploadPage() {
           semester: Number(form.semester),
           price: Number(form.price),
 
-          // full PDF path only, not public URL
+          // Private/full PDF storage path
           file_url: fullPath,
 
-          // public 10% preview URL
-          preview_url: previewUrlData.publicUrl,
+          // Public preview PDF URL
+          preview_file_url: previewUrlData.publicUrl,
 
           thumbnail_url: thumbnailUrl,
           status: "pending",
@@ -169,11 +198,22 @@ export default function UploadPage() {
         <h1 className="font-display text-4xl">Upload Note</h1>
       </div>
 
-      <form onSubmit={submit} className="bg-white border-2 border-black rounded-lg p-6 brutal-shadow space-y-4">
-        <Field label="Title" placeholder="e.g. DSP Handwritten Notes" value={form.title} onChange={set("title")} required />
+      <form
+        onSubmit={submit}
+        className="bg-white border-2 border-black rounded-lg p-6 brutal-shadow space-y-4"
+      >
+        <Field
+          label="Title"
+          placeholder="e.g. DSP Handwritten Notes"
+          value={form.title}
+          onChange={set("title")}
+          required
+        />
 
         <label className="block">
-          <span className="block text-xs uppercase font-bold mb-1 tracking-wide">Description</span>
+          <span className="block text-xs uppercase font-bold mb-1 tracking-wide">
+            Description
+          </span>
           <textarea
             rows={3}
             value={form.description}
@@ -185,32 +225,90 @@ export default function UploadPage() {
         </label>
 
         <div className="grid sm:grid-cols-2 gap-3">
-          <Field label="Subject" value={form.subject} onChange={set("subject")} required placeholder="Digital Signal Processing" />
-          <Field label="Branch" value={form.branch} onChange={set("branch")} required placeholder="ECE" />
+          <Field
+            label="Subject"
+            value={form.subject}
+            onChange={set("subject")}
+            required
+            placeholder="Digital Signal Processing"
+          />
+          <Field
+            label="Branch"
+            value={form.branch}
+            onChange={set("branch")}
+            required
+            placeholder="ECE"
+          />
         </div>
 
         <div className="grid sm:grid-cols-3 gap-3">
-          <Field type="number" min="1" max="10" label="Semester" value={form.semester} onChange={set("semester")} required />
-          <Field label="College" value={form.college} onChange={set("college")} required placeholder="NIT Patna" />
-          <Field label="University" value={form.university} onChange={set("university")} placeholder="AICTE" />
+          <Field
+            type="number"
+            min="1"
+            max="10"
+            label="Semester"
+            value={form.semester}
+            onChange={set("semester")}
+            required
+          />
+          <Field
+            label="College"
+            value={form.college}
+            onChange={set("college")}
+            required
+            placeholder="NIT Patna"
+          />
+          <Field
+            label="University"
+            value={form.university}
+            onChange={set("university")}
+            placeholder="AICTE"
+          />
         </div>
 
-        <Field label="Price ₹ (0 = Free, max 100)" type="number" min="0" max="100" value={form.price} onChange={set("price")} required />
+        <Field
+          label="Price ₹ (0 = Free, max 100)"
+          type="number"
+          min="0"
+          max="100"
+          value={form.price}
+          onChange={set("price")}
+          required
+        />
 
         <label className="block">
-          <span className="block text-xs uppercase font-bold mb-1">PDF file</span>
+          <span className="block text-xs uppercase font-bold mb-1">
+            PDF file
+          </span>
           <div className="border-2 border-dashed border-black rounded-md p-4 flex items-center gap-3">
             <FileText size={20} />
-            <input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] || null)} required />
+            <input
+              type="file"
+              accept="application/pdf"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              required
+            />
           </div>
+          <p className="text-xs text-neutral-500 mt-1">
+            A 3-page preview will be generated automatically.
+          </p>
         </label>
 
         <label className="block">
-          <span className="block text-xs uppercase font-bold mb-1">Thumbnail image optional</span>
-          <input type="file" accept="image/*" onChange={(e) => setThumb(e.target.files?.[0] || null)} />
+          <span className="block text-xs uppercase font-bold mb-1">
+            Thumbnail image optional
+          </span>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setThumb(e.target.files?.[0] || null)}
+          />
         </label>
 
-        <button disabled={loading} className="w-full brutal-btn bg-[#F4FF47] py-3 rounded-md uppercase font-display text-lg flex items-center justify-center gap-2 disabled:opacity-50">
+        <button
+          disabled={loading}
+          className="w-full brutal-btn bg-[#F4FF47] py-3 rounded-md uppercase font-display text-lg flex items-center justify-center gap-2 disabled:opacity-50"
+        >
           <UploadSimple size={20} weight="bold" />
           {loading ? "Uploading..." : "Publish Note"}
         </button>

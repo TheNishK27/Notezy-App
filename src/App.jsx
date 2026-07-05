@@ -167,6 +167,7 @@ function AppRoutes() {
           </AdminProtected>
         }
       />
+      
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

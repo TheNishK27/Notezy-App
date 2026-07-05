@@ -14,6 +14,7 @@ import {
   UploadSimple,
   SignOut,
   CreditCard,
+  ShieldCheck,
 } from "@phosphor-icons/react";
 
 export default function Profile() {
@@ -34,7 +35,7 @@ export default function Profile() {
     if (currentUser) {
       const { data: profileData, error } = await supabase
         .from("profiles")
-        .select("wallet_balance,total_sales,seller_level")
+        .select("wallet_balance,total_sales,seller_level,is_admin")
         .eq("id", currentUser.id)
         .single();
 
@@ -43,6 +44,7 @@ export default function Profile() {
       }
 
       setProfile(profileData);
+      console.log(profileData);
     }
   };
 
@@ -61,6 +63,7 @@ export default function Profile() {
 
   const meta = user.user_metadata || {};
   const walletBalance = Number(profile?.wallet_balance || 0).toFixed(2);
+  const isAdmin = profile?.is_admin === true;
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
@@ -72,9 +75,16 @@ export default function Profile() {
         <div className="flex-1">
           <h1 className="font-display text-3xl flex items-center gap-2 flex-wrap">
             {meta.full_name || "Student"}
+
             {user.email_confirmed_at && (
               <span className="chip" style={{ background: "#4ADE80" }}>
                 <SealCheck size={12} weight="fill" /> Email Verified
+              </span>
+            )}
+
+            {isAdmin && (
+              <span className="chip" style={{ background: "#F4FF47" }}>
+                <ShieldCheck size={12} weight="fill" /> Admin
               </span>
             )}
           </h1>
@@ -94,48 +104,51 @@ export default function Profile() {
       <div className="grid sm:grid-cols-3 gap-5">
         <Info icon={Envelope} label="Email" value={user.email} />
         <Info icon={Hash} label="Roll No" value={meta.roll_number || "—"} />
-        <Info
-          icon={GraduationCap}
-          label="College"
-          value={meta.college || "—"}
-        />
+        <Info icon={GraduationCap} label="College" value={meta.college || "—"} />
       </div>
 
       <div className="bg-white border-2 border-black rounded-lg p-6 brutal-shadow">
         <h2 className="font-display text-3xl mb-4">Quick Actions</h2>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Action
-            to="/wishlist"
-            icon={Heart}
-            label="Wishlist"
-            color="#FF6B9E"
-          />
+          <Action to="/wishlist" icon={Heart} label="Wishlist" color="#FF6B9E" />
+
           <Action
             to="/library"
             icon={BookOpenText}
             label="Library"
             color="#4ADE80"
           />
+
           <Action
             to="/wallet"
             icon={CreditCard}
             label="Wallet"
             color="#F4FF47"
           />
+
           <Action
             to="/dashboard"
             icon={ChartBar}
             label="Dashboard"
             color="#F4FF47"
           />
+
           <Action
             to="/upload"
             icon={UploadSimple}
             label="Upload Notes"
             color="#4C7BF4"
           />
-          
+
+          {isAdmin && (
+            <Action
+              to="/admin"
+              icon={ShieldCheck}
+              label="Admin Dashboard"
+              color="#FF6B35"
+            />
+          )}
         </div>
       </div>
 

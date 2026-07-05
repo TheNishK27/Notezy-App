@@ -4,9 +4,6 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 const API_URL = import.meta.env.VITE_API_URL;
-console.log("MODE:", import.meta.env.MODE);
-console.log("VITE_API_URL:", import.meta.env.VITE_API_URL);
-console.log("API_URL:", API_URL);
 
 export default function Library() {
   const [items, setItems] = useState([]);
@@ -21,7 +18,10 @@ export default function Library() {
     try {
       const { data: auth } = await supabase.auth.getUser();
 
-      if (!auth.user) return;
+      if (!auth.user) {
+        setItems([]);
+        return;
+      }
 
       const { data: purchases, error } = await supabase
         .from("purchases")
@@ -33,7 +33,7 @@ export default function Library() {
 
       if (error) throw error;
 
-      const notes = purchases.map((p) => p.notes).filter(Boolean);
+      const notes = (purchases || []).map((p) => p.notes).filter(Boolean);
       setItems(notes);
     } catch (err) {
       console.error(err);
@@ -47,12 +47,10 @@ export default function Library() {
     try {
       setDownloadingId(noteId);
 
-      const { data: auth } = await supabase.auth.getUser();
       const { data: sessionData } = await supabase.auth.getSession();
-
       const token = sessionData?.session?.access_token;
 
-      if (!auth.user || !token) {
+      if (!token) {
         toast.error("Please login first");
         return;
       }
@@ -74,7 +72,11 @@ export default function Library() {
         throw new Error(json.detail || "Download failed");
       }
 
-      window.open(json.download_url, "_blank");
+      if (!json.download_url) {
+        throw new Error("Download URL not received");
+      }
+
+      window.open(json.download_url, "_blank", "noopener,noreferrer");
     } catch (err) {
       console.error(err);
       toast.error(err.message || "Download failed");

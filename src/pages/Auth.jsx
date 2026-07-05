@@ -12,6 +12,8 @@ import {
   ShieldCheck,
 } from "@phosphor-icons/react";
 
+const ALLOWED_EMAIL_DOMAIN = "@nitp.ac.in";
+
 const TextField = ({ icon: Icon, label, testId, ...props }) => (
   <label className="block">
     <span className="block text-xs uppercase font-bold mb-1 tracking-wide">
@@ -37,7 +39,7 @@ export default function Auth() {
     email: "",
     password: "",
     name: "",
-    college: "",
+    college: "NIT Patna",
     roll_number: "",
     department: "",
     year: 1,
@@ -48,19 +50,32 @@ export default function Auth() {
     setForm({ ...form, [key]: e.target.value });
   };
 
+  const isNitpEmail = (email) => {
+    return email.trim().toLowerCase().endsWith(ALLOWED_EMAIL_DOMAIN);
+  };
+
   const submit = async (e) => {
     e.preventDefault();
+
+    const email = form.email.trim().toLowerCase();
+
+    if (!isNitpEmail(email)) {
+      toast.error("Only NIT Patna email IDs ending with @nitp.ac.in are allowed.");
+      return;
+    }
+
     setLoading(true);
 
     try {
       if (mode === "register") {
         const { error } = await supabase.auth.signUp({
-          email: form.email,
+          email,
           password: form.password,
           options: {
             data: {
               full_name: form.name,
-              college: form.college,
+              college: "NIT Patna",
+              college_email: email,
               roll_number: form.roll_number,
               branch: form.department,
               year: Number(form.year),
@@ -72,11 +87,11 @@ export default function Auth() {
 
         if (error) throw error;
 
-        toast.success("Verification email sent. Check your college email.");
+        toast.success("Verification email sent. Check your NIT Patna email.");
         setMode("login");
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
-          email: form.email,
+          email,
           password: form.password,
         });
 
@@ -101,7 +116,7 @@ export default function Auth() {
       <div className="hidden lg:flex bg-[#F4FF47] border-r-2 border-black p-12 flex-col justify-between">
         <div>
           <div className="inline-flex items-center gap-2 bg-white border-2 border-black px-3 py-1 rounded-full brutal-shadow-sm text-xs uppercase font-bold">
-            <ShieldCheck size={14} weight="bold" /> Verified Students Only
+            <ShieldCheck size={14} weight="bold" /> NIT Patna Students Only
           </div>
 
           <h1 className="font-display text-6xl mt-6 leading-[0.95]">
@@ -109,8 +124,8 @@ export default function Auth() {
           </h1>
 
           <p className="text-neutral-800 mt-4 max-w-md">
-            Sign up with your college email. Supabase will send a verification
-            link. No fakes. No spam. Just real notes from real students.
+            Sign up with your official NIT Patna email ending with{" "}
+            <b>@nitp.ac.in</b>. Supabase will send a verification link.
           </p>
         </div>
 
@@ -120,7 +135,7 @@ export default function Auth() {
           </div>
 
           <div className="font-display text-2xl mt-1">
-            Priya from IIT-B made ₹2,340 this week
+            Priya from NIT Patna made ₹2,340 this week
           </div>
         </div>
       </div>
@@ -163,9 +178,9 @@ export default function Auth() {
                   icon={GraduationCap}
                   testId="auth-college"
                   label="College"
-                  placeholder="NIT Patna"
-                  value={form.college}
-                  onChange={set("college")}
+                  value="NIT Patna"
+                  disabled
+                  readOnly
                   required
                 />
 
@@ -218,8 +233,8 @@ export default function Auth() {
           <TextField
             icon={Envelope}
             testId="auth-email"
-            label="College Email"
-            placeholder="you@college.ac.in"
+            label="NIT Patna Email"
+            placeholder="you@nitp.ac.in"
             type="email"
             value={form.email}
             onChange={set("email")}
@@ -287,6 +302,10 @@ export default function Auth() {
               </span>
             )}
           </div>
+
+          <p className="text-[11px] text-center text-neutral-500">
+            Only emails ending with <b>@nitp.ac.in</b> are allowed.
+          </p>
         </form>
       </div>
     </div>

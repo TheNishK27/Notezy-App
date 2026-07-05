@@ -2,11 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { Star } from "@phosphor-icons/react";
+import PdfPreview from "../components/PdfPreview";
 
 const API_URL = import.meta.env.VITE_API_URL;
-console.log("MODE:", import.meta.env.MODE);
-console.log("VITE_API_URL:", import.meta.env.VITE_API_URL);
-console.log("API_URL:", API_URL);
 
 export default function NoteDetail() {
   const { id } = useParams();
@@ -33,35 +31,27 @@ export default function NoteDetail() {
     const currentUser = userData?.user || null;
     setUser(currentUser);
 
-    const { data: userData } = await supabase.auth.getUser();
-const currentUser = userData?.user || null;
-setUser(currentUser);
+    let noteQuery = supabase.from("notes").select("*").eq("id", id);
 
-let noteQuery = supabase
-  .from("notes")
-  .select("*")
-  .eq("id", id);
+    if (!currentUser) {
+      noteQuery = noteQuery.eq("status", "approved");
+    } else {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", currentUser.id)
+        .single();
 
-if (!currentUser) {
-  noteQuery = noteQuery.eq("status", "approved");
-} else {
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", currentUser.id)
-    .single();
+      const isAdmin = profile?.is_admin === true;
 
-  const isAdmin = profile?.is_admin === true;
+      if (!isAdmin) {
+        noteQuery = noteQuery.or(
+          `status.eq.approved,seller_id.eq.${currentUser.id}`
+        );
+      }
+    }
 
-  if (!isAdmin) {
-    noteQuery = noteQuery.or(
-      `status.eq.approved,seller_id.eq.${currentUser.id}`
-    );
-  }
-}
-
-const { data: noteData, error: noteError } =
-  await noteQuery.single();
+    const { data: noteData, error: noteError } = await noteQuery.single();
 
     if (noteError) {
       console.error(noteError);
@@ -263,42 +253,41 @@ const { data: noteData, error: noteError } =
     }
   };
 
-const payWithWallet = async () => {
-  try {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData?.session?.access_token;
+  const payWithWallet = async () => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
 
-    if (!token) {
-      alert("Please login first.");
-      return;
+      if (!token) {
+        alert("Please login first.");
+        return;
+      }
+
+      const res = await fetch(`${API_URL}/api/wallet/pay`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          note_id: note.id,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.detail || "Wallet payment failed");
+        return;
+      }
+
+      alert("Purchased successfully using Wallet!");
+      loadPage();
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Wallet payment failed");
     }
-
-    const res = await fetch(`${API_URL}/api/wallet/pay`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        note_id: note.id,
-      }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      alert(data.detail || "Wallet payment failed");
-      return;
-    }
-
-    alert("Purchased successfully using Wallet!");
-
-    loadPage();
-  } catch (err) {
-    console.error(err);
-    alert(err.message || "Wallet payment failed");
-  }
-};
+  };
 
   if (loading) {
     return (
@@ -315,6 +304,8 @@ const payWithWallet = async () => {
       </div>
     );
   }
+
+
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-10 space-y-10">
@@ -361,35 +352,43 @@ const payWithWallet = async () => {
             </p>
           </div>
 
-          <button
-            disabled
-            className="inline-block brutal-btn bg-gray-300 text-gray-600 px-6 py-3 rounded-md cursor-not-allowed"
-          >
-            Preview Coming Soon
-          </button>
+          {(note.preview_file_url || note.preview_url) && (
+  <a
+    href={note.preview_file_url || note.preview_url}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="inline-flex items-center justify-center brutal-btn bg-[#4C7BF4] text-white px-6 py-3 rounded-md font-bold"
+  >
+    📄 View PDF Preview
+  </a>
+)}
 
-          <p className="text-xs text-neutral-500">
-            Only a small preview of this note is available. Purchase to unlock
-            the full PDF.
+<p className="text-xs text-neutral-500 mt-2">
+  Opens a 3-page preview in a new tab. Purchase this note to unlock the full PDF.
+</p>
+
+          <p className="text-xs text-neutral-500 mt-2">
+            Only the first 3 pages are shown. Purchase this note to unlock the
+            complete PDF.
           </p>
 
           {!hasPurchased && (
-  <div className="flex flex-col gap-3 mt-4">
-    <button
-      onClick={payWithWallet}
-      className="brutal-btn bg-[#4ADE80] px-6 py-3 rounded-md font-bold"
-    >
-      💰 Pay with Wallet
-    </button>
+            <div className="flex flex-col gap-3 mt-4">
+              <button
+                onClick={payWithWallet}
+                className="brutal-btn bg-[#4ADE80] px-6 py-3 rounded-md font-bold"
+              >
+                💰 Pay with Wallet
+              </button>
 
-    <button
-      onClick={buyNow}
-      className="brutal-btn bg-[#F4FF47] px-6 py-3 rounded-md font-bold"
-    >
-      💳 Pay with Razorpay
-    </button>
-  </div>
-)}
+              <button
+                onClick={buyNow}
+                className="brutal-btn bg-[#F4FF47] px-6 py-3 rounded-md font-bold"
+              >
+                💳 Pay with Razorpay
+              </button>
+            </div>
+          )}
 
           {hasPurchased && (
             <div className="font-bold text-green-700">
