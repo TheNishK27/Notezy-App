@@ -11,6 +11,13 @@ import {
   Crown,
 } from "@phosphor-icons/react";
 
+const getSharePercent = (level) => {
+  if (level === "Notezy Elite") return 80;
+  if (level === "Top Seller") return 75;
+  if (level === "Rising Seller") return 65;
+  return 60;
+};
+
 const Stat = ({ label, value, color, icon: Icon }) => (
   <div
     className="bg-white border-2 border-black rounded-lg p-5 brutal-shadow"
@@ -123,6 +130,18 @@ export default function SellerDashboard() {
     }
   };
 
+  const sharePercent = getSharePercent(stats.seller_level);
+  const nextTarget =
+    stats.total_sold < 25
+      ? 25
+      : stats.total_sold < 100
+      ? 100
+      : null;
+
+  const progressPercent = nextTarget
+    ? Math.min((stats.total_sold / nextTarget) * 100, 100)
+    : 100;
+
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto p-10 font-display text-3xl">
@@ -188,6 +207,61 @@ export default function SellerDashboard() {
         />
       </div>
 
+      <div className="bg-white border-2 border-black rounded-lg p-6 brutal-shadow">
+        <h2 className="font-display text-3xl mb-3">Creator Earnings</h2>
+
+        <div className="grid lg:grid-cols-3 gap-5">
+          <div className="bg-[#F4FF47] border-2 border-black rounded-md p-4">
+            <div className="text-xs uppercase font-bold">Your Current Share</div>
+            <div className="font-display text-5xl mt-1">{sharePercent}%</div>
+            <div className="text-sm font-bold mt-1">{stats.seller_level}</div>
+          </div>
+
+          <div className="lg:col-span-2 space-y-3 text-sm">
+            <p>
+              Your creator level decides how much you keep from every sale.
+              Your level updates automatically as your total sales increase.
+            </p>
+
+            {nextTarget ? (
+              <div>
+                <div className="flex justify-between text-xs font-bold mb-1">
+                  <span>
+                    Progress to {nextTarget === 25 ? "Rising Seller" : "Top Seller"}
+                  </span>
+                  <span>
+                    {stats.total_sold}/{nextTarget} sales
+                  </span>
+                </div>
+
+                <div className="h-4 border-2 border-black rounded-full overflow-hidden bg-white">
+                  <div
+                    className="h-full bg-[#4ADE80]"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="font-bold text-green-700">
+                You have reached the highest automatic seller tier.
+              </div>
+            )}
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-2">
+              <Tier name="New Seller" requirement="0–24 sales" share="60%" />
+              <Tier name="Rising Seller" requirement="25–99 sales" share="65%" />
+              <Tier name="Top Seller" requirement="100+ sales" share="75%" />
+              <Tier name="Notezy Elite" requirement="Invite only" share="80%" />
+            </div>
+
+            <div className="text-xs text-neutral-600 border-t border-dashed border-black/30 pt-3">
+              Selected creators may earn up to 90% on eligible sales through
+              special promotions or platform initiatives.
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="grid lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 bg-white border-2 border-black rounded-lg p-6 brutal-shadow">
           <h2 className="font-display text-2xl mb-4">Recent Sales</h2>
@@ -235,6 +309,14 @@ export default function SellerDashboard() {
 
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-2">
+                <Wallet size={16} />
+                Current Share
+              </span>
+              <b>{sharePercent}%</b>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
                 <Star size={16} />
                 Avg Rating
               </span>
@@ -242,7 +324,8 @@ export default function SellerDashboard() {
             </div>
 
             <div className="border-t border-dashed border-black/30 pt-3 text-xs text-neutral-600">
-              Seller levels increase as your notes get more sales.
+              Your revenue split is automatically recalculated on every new sale
+              based on your current creator level.
             </div>
           </div>
         </div>
@@ -273,3 +356,11 @@ export default function SellerDashboard() {
     </div>
   );
 }
+
+const Tier = ({ name, requirement, share }) => (
+  <div className="border-2 border-black rounded-md p-3 bg-[#FAFAFA]">
+    <div className="font-bold text-sm">{name}</div>
+    <div className="text-xs text-neutral-600">{requirement}</div>
+    <div className="font-display text-2xl mt-1">{share}</div>
+  </div>
+);
