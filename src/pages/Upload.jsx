@@ -1,11 +1,21 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
 import { PDFDocument } from "pdf-lib";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import { UploadSimple, FileText } from "@phosphor-icons/react";
+import {
+  UploadSimple,
+  FileText,
+  CurrencyInr,
+  GraduationCap,
+  BookOpenText,
+  CheckCircle,
+  WarningCircle,
+  X,
+  Sparkle,
+} from "@phosphor-icons/react";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
@@ -22,31 +32,27 @@ const BRANCHES = [
   "Master of Computer Applications",
 ];
 
-const Field = ({ label, ...props }) => (
-  <label className="block">
-    <span className="block text-xs uppercase font-bold mb-1 tracking-wide">
+const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+const Field = ({ label, helper, className = "", ...props }) => (
+  <label className={`block ${className}`}>
+    <span className="block text-xs uppercase font-bold mb-1 tracking-wide text-neutral-700 dark:text-neutral-300">
       {label}
     </span>
-    <input
-      {...props}
-      className="w-full border-2 border-black rounded-md px-3 py-2 text-sm bg-white"
-    />
+    <input {...props} className="notezy-input text-sm" />
+    {helper && <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{helper}</p>}
   </label>
 );
 
-const SelectField = ({ label, value, onChange, children, required = false }) => (
+const SelectField = ({ label, value, onChange, children, required = false, helper }) => (
   <label className="block">
-    <span className="block text-xs uppercase font-bold mb-1 tracking-wide">
+    <span className="block text-xs uppercase font-bold mb-1 tracking-wide text-neutral-700 dark:text-neutral-300">
       {label}
     </span>
-    <select
-      value={value}
-      onChange={onChange}
-      required={required}
-      className="w-full border-2 border-black rounded-md px-3 py-2 text-sm bg-white"
-    >
+    <select value={value} onChange={onChange} required={required} className="notezy-input text-sm">
       {children}
     </select>
+    {helper && <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{helper}</p>}
   </label>
 );
 
@@ -72,10 +78,7 @@ async function createPreviewPdf(file) {
 async function createPdfThumbnail(file) {
   const bytes = await file.arrayBuffer();
 
-  const pdf = await pdfjsLib.getDocument({
-    data: bytes,
-  }).promise;
-
+  const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
   const page = await pdf.getPage(1);
   const viewport = page.getViewport({ scale: 1.5 });
 
@@ -85,10 +88,7 @@ async function createPdfThumbnail(file) {
   canvas.width = viewport.width;
   canvas.height = viewport.height;
 
-  await page.render({
-    canvasContext: context,
-    viewport,
-  }).promise;
+  await page.render({ canvasContext: context, viewport }).promise;
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(
@@ -97,7 +97,6 @@ async function createPdfThumbnail(file) {
           reject(new Error("Could not generate PDF thumbnail"));
           return;
         }
-
         resolve(blob);
       },
       "image/jpeg",
@@ -106,10 +105,20 @@ async function createPdfThumbnail(file) {
   });
 }
 
+function formatFileSize(bytes) {
+  if (!bytes) return "0 KB";
+  const mb = bytes / (1024 * 1024);
+  if (mb >= 1) return `${mb.toFixed(2)} MB`;
+  return `${(bytes / 1024).toFixed(1)} KB`;
+}
+
 export default function UploadPage() {
   const navigate = useNavigate();
+  const inputRef = useRef(null);
+
   const [loading, setLoading] = useState(false);
   const [subjects, setSubjects] = useState([]);
+  const [dragActive, setDragActive] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
@@ -125,8 +134,31 @@ export default function UploadPage() {
 
   const [file, setFile] = useState(null);
 
+  const finalSubject = useMemo(() => {
+    return form.subject === "__custom__" ? form.customSubject.trim() : form.subject.trim();
+  }, [form.subject, form.customSubject]);
+
+  const priceNumber = Number(form.price || 0);
+  const canSubmit = Boolean(file && form.title && form.description && form.branch && finalSubject && priceNumber >= 0 && priceNumber <= 100 && !loading);
+
   const set = (key) => (e) => {
-    setForm({ ...form, [key]: e.target.value });
+    setForm((prev) => ({ ...prev, [key]: e.target.value }));
+  };
+
+  const handleFile = (selectedFile) => {
+    if (!selectedFile) return;
+
+    if (selectedFile.type !== "application/pdf") {
+      toast.error("Only PDF files are allowed");
+      return;
+    }
+
+    if (selectedFile.size > 40 * 1024 * 1024) {
+      toast.error("PDF is too large. Keep it under 40 MB for beta.");
+      return;
+    }
+
+    setFile(selectedFile);
   };
 
   useEffect(() => {
@@ -166,35 +198,16 @@ export default function UploadPage() {
   const submit = async (e) => {
     e.preventDefault();
 
-    const finalSubject =
-      form.subject === "__custom__"
-        ? form.customSubject.trim()
-        : form.subject.trim();
-
-    if (!file) {
-      toast.error("Please attach a PDF file");
-      return;
-    }
-
-    if (!form.branch) {
-      toast.error("Please select a branch");
-      return;
-    }
-
-    if (!finalSubject) {
-      toast.error("Please select or enter a subject");
-      return;
-    }
+    if (!file) return toast.error("Please attach a PDF file");
+    if (!form.branch) return toast.error("Please select a branch");
+    if (!finalSubject) return toast.error("Please select or enter a subject");
+    if (priceNumber < 0 || priceNumber > 100) return toast.error("Price must be between ₹0 and ₹100");
 
     setLoading(true);
 
     try {
-      const { data: userData, error: userError } =
-        await supabase.auth.getUser();
-
-      if (userError || !userData.user) {
-        throw new Error("Please login first");
-      }
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user) throw new Error("Please login first");
 
       const userId = userData.user.id;
       const meta = userData.user.user_metadata || {};
@@ -215,43 +228,28 @@ export default function UploadPage() {
       const previewPath = `${userId}/preview-${safeName}`;
       const thumbnailPath = `${userId}/thumb-${safeName.replace(".pdf", ".jpg")}`;
 
+      toast.info("Generating preview and thumbnail...");
       const previewBlob = await createPreviewPdf(file);
       const thumbnailBlob = await createPdfThumbnail(file);
 
+      toast.info("Uploading secure files...");
       const { error: fullUploadError } = await supabase.storage
         .from("notes")
-        .upload(fullPath, file, {
-          contentType: "application/pdf",
-          upsert: false,
-        });
-
+        .upload(fullPath, file, { contentType: "application/pdf", upsert: false });
       if (fullUploadError) throw fullUploadError;
 
       const { error: previewUploadError } = await supabase.storage
         .from("previews")
-        .upload(previewPath, previewBlob, {
-          contentType: "application/pdf",
-          upsert: false,
-        });
-
+        .upload(previewPath, previewBlob, { contentType: "application/pdf", upsert: false });
       if (previewUploadError) throw previewUploadError;
 
       const { error: thumbUploadError } = await supabase.storage
         .from("thumbnails")
-        .upload(thumbnailPath, thumbnailBlob, {
-          contentType: "image/jpeg",
-          upsert: false,
-        });
-
+        .upload(thumbnailPath, thumbnailBlob, { contentType: "image/jpeg", upsert: false });
       if (thumbUploadError) throw thumbUploadError;
 
-      const { data: previewUrlData } = supabase.storage
-        .from("previews")
-        .getPublicUrl(previewPath);
-
-      const { data: thumbUrlData } = supabase.storage
-        .from("thumbnails")
-        .getPublicUrl(thumbnailPath);
+      const { data: previewUrlData } = supabase.storage.from("previews").getPublicUrl(previewPath);
+      const { data: thumbUrlData } = supabase.storage.from("thumbnails").getPublicUrl(thumbnailPath);
 
       const { data: collegeData } = await supabase
         .from("colleges")
@@ -270,7 +268,7 @@ export default function UploadPage() {
           branch: form.branch,
           semester: Number(form.semester),
           college: "NIT Patna",
-          price: Number(form.price),
+          price: priceNumber,
           file_url: fullPath,
           preview_file_url: previewUrlData.publicUrl,
           thumbnail_url: thumbUrlData.publicUrl,
@@ -292,144 +290,240 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 border-2 border-black rounded-md flex items-center justify-center bg-[#4C7BF4] text-white">
-          <UploadSimple size={20} weight="bold" />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 text-black dark:text-white">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 border-2 border-black dark:border-white rounded-md flex items-center justify-center bg-[#4C7BF4] text-white brutal-shadow-sm">
+            <UploadSimple size={22} weight="bold" />
+          </div>
+          <div>
+            <h1 className="font-display text-4xl sm:text-5xl leading-none">Upload Note</h1>
+            <p className="text-sm text-neutral-600 dark:text-neutral-300 mt-1">
+              Create preview, thumbnail, and secure full PDF automatically.
+            </p>
+          </div>
         </div>
-        <h1 className="font-display text-4xl">Upload Note</h1>
+
+        <div className="inline-flex items-center gap-2 bg-[#F4FF47] text-black border-2 border-black dark:border-white rounded-md px-3 py-2 brutal-shadow-sm text-xs uppercase font-bold w-fit">
+          <Sparkle size={14} weight="fill" /> NIT Patna Beta
+        </div>
       </div>
 
-      <form
-        onSubmit={submit}
-        className="bg-white border-2 border-black rounded-lg p-6 brutal-shadow space-y-4"
-      >
-        <div className="bg-[#F4FF47] border-2 border-black rounded-md px-4 py-3 text-sm font-bold">
-          Uploading for: NIT Patna
+      <form onSubmit={submit} className="grid lg:grid-cols-12 gap-6 items-start">
+        <div className="lg:col-span-8 space-y-5">
+          <section className="notezy-card p-5 sm:p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-[#4ADE80] text-black border-2 border-black dark:border-white rounded-md flex items-center justify-center shrink-0">
+                <BookOpenText size={20} weight="bold" />
+              </div>
+              <div>
+                <h2 className="font-display text-2xl">Note Details</h2>
+                <p className="text-sm text-neutral-600 dark:text-neutral-300">
+                  Add enough detail so buyers understand what they are purchasing.
+                </p>
+              </div>
+            </div>
+
+            <Field label="Title" placeholder="e.g. DSP Handwritten Notes" value={form.title} onChange={set("title")} required />
+
+            <label className="block">
+              <span className="block text-xs uppercase font-bold mb-1 tracking-wide text-neutral-700 dark:text-neutral-300">
+                Description
+              </span>
+              <textarea
+                rows={4}
+                value={form.description}
+                onChange={set("description")}
+                required
+                placeholder="What's inside? Why is it useful? Mention units, PYQs, solved examples, diagrams, etc."
+                className="notezy-input text-sm resize-none min-h-[120px]"
+              />
+            </label>
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              <SelectField label="Branch" value={form.branch} onChange={set("branch")} required>
+                <option value="">Select branch</option>
+                {BRANCHES.map((branch) => (
+                  <option key={branch} value={branch}>{branch}</option>
+                ))}
+              </SelectField>
+
+              <SelectField label="Semester" value={form.semester} onChange={set("semester")} required>
+                {SEMESTERS.map((sem) => (
+                  <option key={sem} value={sem}>Semester {sem}</option>
+                ))}
+              </SelectField>
+            </div>
+
+            <SelectField label="Subject" value={form.subject} onChange={set("subject")} required>
+              <option value="">
+                {!form.branch ? "Select branch first" : subjects.length === 0 ? "No subjects found — choose Other" : "Select subject"}
+              </option>
+              {subjects.map((subject) => (
+                <option key={subject.subject_name} value={subject.subject_name}>{subject.subject_name}</option>
+              ))}
+              <option value="__custom__">✏️ Other (Enter manually)</option>
+            </SelectField>
+
+            {form.subject === "__custom__" && (
+              <Field label="Custom Subject Name" placeholder="Enter subject name" value={form.customSubject} onChange={set("customSubject")} required />
+            )}
+          </section>
+
+          <section className="notezy-card p-5 sm:p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-[#FF6B9E] text-black border-2 border-black dark:border-white rounded-md flex items-center justify-center shrink-0">
+                <FileText size={20} weight="bold" />
+              </div>
+              <div>
+                <h2 className="font-display text-2xl">PDF File</h2>
+                <p className="text-sm text-neutral-600 dark:text-neutral-300">
+                  Upload one PDF. A 3-page preview and thumbnail will be generated.
+                </p>
+              </div>
+            </div>
+
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => inputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+              onDragLeave={() => setDragActive(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragActive(false);
+                handleFile(e.dataTransfer.files?.[0]);
+              }}
+              className={`border-2 border-dashed rounded-lg p-6 sm:p-8 text-center cursor-pointer transition-all ${
+                dragActive
+                  ? "border-[#4C7BF4] bg-blue-50 dark:bg-blue-950/30"
+                  : "border-black dark:border-white bg-[#FAFAFA] dark:bg-[#111111]"
+              }`}
+            >
+              <input
+                ref={inputRef}
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => handleFile(e.target.files?.[0])}
+                required={!file}
+                className="hidden"
+              />
+
+              {!file ? (
+                <div className="space-y-3">
+                  <div className="mx-auto w-14 h-14 rounded-full bg-[#F4FF47] text-black border-2 border-black dark:border-white flex items-center justify-center brutal-shadow-sm">
+                    <UploadSimple size={28} weight="bold" />
+                  </div>
+                  <div>
+                    <div className="font-display text-2xl">Drop your PDF here</div>
+                    <div className="text-sm text-neutral-600 dark:text-neutral-300 mt-1">
+                      or click to browse from your device
+                    </div>
+                  </div>
+                  <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                    PDF only · recommended size under 40 MB
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-left">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-12 h-12 rounded-md bg-[#4ADE80] text-black border-2 border-black dark:border-white flex items-center justify-center shrink-0">
+                      <FileText size={24} weight="bold" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-bold truncate">{file.name}</div>
+                      <div className="text-xs text-neutral-600 dark:text-neutral-300">{formatFileSize(file.size)}</div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                    className="notezy-icon-btn self-start sm:self-auto"
+                    title="Remove file"
+                  >
+                    <X size={18} weight="bold" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
         </div>
 
-        <Field
-          label="Title"
-          placeholder="e.g. DSP Handwritten Notes"
-          value={form.title}
-          onChange={set("title")}
-          required
-        />
+        <aside className="lg:col-span-4 lg:sticky lg:top-24 space-y-5">
+          <section className="notezy-card p-5 sm:p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-[#F4FF47] text-black border-2 border-black dark:border-white rounded-md flex items-center justify-center shrink-0">
+                <CurrencyInr size={20} weight="bold" />
+              </div>
+              <div>
+                <h2 className="font-display text-2xl">Pricing</h2>
+                <p className="text-sm text-neutral-600 dark:text-neutral-300">Keep it affordable for students.</p>
+              </div>
+            </div>
 
-        <label className="block">
-          <span className="block text-xs uppercase font-bold mb-1 tracking-wide">
-            Description
-          </span>
-          <textarea
-            rows={3}
-            value={form.description}
-            onChange={set("description")}
-            required
-            placeholder="What's inside? Why is it great?"
-            className="w-full border-2 border-black rounded-md px-3 py-2 text-sm"
-          />
-        </label>
+            <label className="block">
+              <span className="block text-xs uppercase font-bold mb-1 tracking-wide text-neutral-700 dark:text-neutral-300">
+                Price
+              </span>
+              <div className="flex items-center border-2 border-black dark:border-white rounded-md bg-white dark:bg-[#111111] overflow-hidden">
+                <div className="px-3 font-display text-xl bg-[#F4FF47] text-black self-stretch flex items-center border-r-2 border-black dark:border-white">
+                  ₹
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={form.price}
+                  onChange={set("price")}
+                  required
+                  className="w-full bg-transparent px-3 py-2 outline-none text-sm text-black dark:text-white"
+                />
+              </div>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">₹0 = Free · Max ₹100</p>
+            </label>
+          </section>
 
-        <div className="grid sm:grid-cols-2 gap-3">
-          <SelectField
-            label="Branch"
-            value={form.branch}
-            onChange={set("branch")}
-            required
-          >
-            <option value="">Select branch</option>
-            {BRANCHES.map((branch) => (
-              <option key={branch} value={branch}>
-                {branch}
-              </option>
-            ))}
-          </SelectField>
+          <section className="notezy-card p-5 sm:p-6 space-y-4">
+            <h2 className="font-display text-2xl">Publish Checklist</h2>
+            <ChecklistItem done={Boolean(file)} text="PDF file attached" />
+            <ChecklistItem done={Boolean(form.title)} text="Title added" />
+            <ChecklistItem done={Boolean(form.description)} text="Description added" />
+            <ChecklistItem done={Boolean(form.branch)} text="Branch selected" />
+            <ChecklistItem done={Boolean(finalSubject)} text="Subject selected" />
+            <ChecklistItem done={priceNumber >= 0 && priceNumber <= 100} text="Price is valid" />
+          </section>
 
-          <SelectField
-            label="Semester"
-            value={form.semester}
-            onChange={set("semester")}
-            required
-          >
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((sem) => (
-              <option key={sem} value={sem}>
-                Semester {sem}
-              </option>
-            ))}
-          </SelectField>
-        </div>
+          <section className="bg-[#F4FF47] text-black border-2 border-black dark:border-white rounded-lg p-5 brutal-shadow space-y-4">
+            <div className="flex items-center gap-2 text-xs uppercase font-bold">
+              <GraduationCap size={16} weight="bold" /> Uploading for
+            </div>
+            <div className="font-display text-3xl leading-none">NIT Patna</div>
+            <p className="text-sm text-neutral-700">
+              Your note will appear in Browse only after admin approval.
+            </p>
 
-        <SelectField
-          label="Subject"
-          value={form.subject}
-          onChange={set("subject")}
-          required
-        >
-          <option value="">
-            {!form.branch
-              ? "Select branch first"
-              : subjects.length === 0
-              ? "No subjects found — choose Other"
-              : "Select subject"}
-          </option>
-
-          {subjects.map((subject) => (
-            <option key={subject.subject_name} value={subject.subject_name}>
-              {subject.subject_name}
-            </option>
-          ))}
-
-          <option value="__custom__">✏️ Other (Enter manually)</option>
-        </SelectField>
-
-        {form.subject === "__custom__" && (
-          <Field
-            label="Custom Subject Name"
-            placeholder="Enter subject name"
-            value={form.customSubject}
-            onChange={set("customSubject")}
-            required
-          />
-        )}
-
-        <Field
-          label="Price ₹ (0 = Free, max 100)"
-          type="number"
-          min="0"
-          max="100"
-          value={form.price}
-          onChange={set("price")}
-          required
-        />
-
-        <label className="block">
-          <span className="block text-xs uppercase font-bold mb-1">
-            PDF file
-          </span>
-
-          <div className="border-2 border-dashed border-black rounded-md p-4 flex items-center gap-3">
-            <FileText size={20} />
-            <input
-              type="file"
-              accept="application/pdf"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-              required
-            />
-          </div>
-
-          <p className="text-xs text-neutral-500 mt-1">
-            A 3-page preview and thumbnail will be generated automatically.
-          </p>
-        </label>
-
-        <button
-          disabled={loading}
-          className="w-full brutal-btn bg-[#F4FF47] py-3 rounded-md uppercase font-display text-lg flex items-center justify-center gap-2 disabled:opacity-50"
-        >
-          <UploadSimple size={20} weight="bold" />
-          {loading ? "Uploading..." : "Publish Note"}
-        </button>
+            <button
+              type="submit"
+              disabled={!canSubmit}
+              className="w-full notezy-blue-btn py-3 rounded-md uppercase font-display text-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <UploadSimple size={20} weight="bold" />
+              {loading ? "Publishing..." : "Publish Note"}
+            </button>
+          </section>
+        </aside>
       </form>
     </div>
   );
 }
+
+const ChecklistItem = ({ done, text }) => (
+  <div className="flex items-center gap-2 text-sm">
+    {done ? (
+      <CheckCircle size={18} weight="fill" className="text-green-600 dark:text-green-400" />
+    ) : (
+      <WarningCircle size={18} weight="bold" className="text-neutral-400" />
+    )}
+    <span className={done ? "font-bold" : "text-neutral-600 dark:text-neutral-400"}>{text}</span>
+  </div>
+);

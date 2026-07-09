@@ -11,18 +11,25 @@ import {
 } from "@phosphor-icons/react";
 import { supabase } from "@/lib/supabase";
 
+const yellowTextStroke = {
+  textShadow:
+    "-0.6px -0.6px 0 #050505, 0.6px -0.6px 0 #050505, -0.6px 0.6px 0 #050505, 0.6px 0.6px 0 #050505",
+};
+
 const Row = ({ title, icon: Icon, accent, children, action }) => (
   <section className="space-y-4">
-    <div className="flex items-end justify-between">
+    <div className="flex items-end justify-between gap-3">
       <div className="flex items-center gap-3">
         <div
-          className="w-10 h-10 border-2 border-black rounded-md flex items-center justify-center"
+          className="w-10 h-10 border-2 border-black dark:border-white rounded-md flex items-center justify-center text-black"
           style={{ background: accent }}
         >
           <Icon size={20} weight="bold" />
         </div>
 
-        <h2 className="font-display text-3xl">{title}</h2>
+        <h2 className="font-display text-3xl text-black dark:text-white">
+          {title}
+        </h2>
       </div>
 
       {action}
@@ -50,30 +57,33 @@ export default function Home() {
 
   const loadHome = async () => {
     try {
-      const [{ data: featuredNotes }, { data: recentNotes }, { data: trendingNotes }] =
-        await Promise.all([
-          supabase
-            .from("notes")
-            .select("*")
-            .eq("status", "approved")
-            .eq("featured", true)
-            .order("created_at", { ascending: false })
-            .limit(8),
+      const [
+        { data: featuredNotes },
+        { data: recentNotes },
+        { data: trendingNotes },
+      ] = await Promise.all([
+        supabase
+          .from("notes")
+          .select("*")
+          .eq("status", "approved")
+          .eq("featured", true)
+          .order("created_at", { ascending: false })
+          .limit(8),
 
-          supabase
-            .from("notes")
-            .select("*")
-            .eq("status", "approved")
-            .order("created_at", { ascending: false })
-            .limit(8),
+        supabase
+          .from("notes")
+          .select("*")
+          .eq("status", "approved")
+          .order("created_at", { ascending: false })
+          .limit(8),
 
-          supabase
-            .from("notes")
-            .select("*")
-            .eq("status", "approved")
-            .order("downloads", { ascending: false })
-            .limit(8),
-        ]);
+        supabase
+          .from("notes")
+          .select("*")
+          .eq("status", "approved")
+          .order("downloads", { ascending: false })
+          .limit(8),
+      ]);
 
       setFeatured(featuredNotes || []);
       setRecent(recentNotes || []);
@@ -130,22 +140,22 @@ export default function Home() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-12">
-      <div className="bg-white border-2 border-black rounded-lg p-6 lg:p-8 brutal-shadow space-y-4 relative overflow-hidden">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-12 text-black dark:text-white">
+      <div className="bg-white dark:bg-[#1b1b1b] border-2 border-black dark:border-white rounded-lg p-6 lg:p-8 brutal-shadow space-y-4 relative overflow-hidden">
         <div className="absolute -top-8 -right-8 w-40 h-40 bg-[#F4FF47] rounded-full border-2 border-black opacity-60" />
 
         <div className="relative">
-          <div className="inline-flex items-center gap-2 chip">
+          <div className="inline-flex items-center gap-2 chip bg-white dark:bg-[#111111] border-black dark:border-white text-black dark:text-white">
             <Sparkle size={12} weight="fill" /> AI-Powered
           </div>
 
-          <h1 className="font-display text-3xl sm:text-4xl mt-3">
+          <h1 className="font-display text-3xl sm:text-4xl mt-3 text-black dark:text-white">
             Hi {user?.name?.split(" ")[0] || "there"}, what are you studying
             today?
           </h1>
 
           <form onSubmit={runAi} className="mt-4 flex flex-col sm:flex-row gap-3">
-            <div className="flex-1 flex items-center gap-2 border-2 border-black rounded-md px-4 py-3 bg-white focus-within:shadow-[4px_4px_0_0_#050505] transition-shadow">
+            <div className="flex-1 flex items-center gap-2 border-2 border-black dark:border-white rounded-md px-4 py-3 bg-white dark:bg-[#111111] focus-within:shadow-[4px_4px_0_0_#050505] dark:focus-within:shadow-[4px_4px_0_0_#ffffff] transition-shadow">
               <MagnifyingGlass size={18} weight="bold" />
 
               <input
@@ -153,7 +163,7 @@ export default function Home() {
                 placeholder="e.g. easy DSP notes for last minute revision"
                 value={aiQuery}
                 onChange={(e) => setAiQuery(e.target.value)}
-                className="w-full bg-transparent outline-none text-base"
+                className="w-full bg-transparent outline-none text-base text-black dark:text-white placeholder:text-neutral-500 dark:placeholder:text-neutral-400"
               />
             </div>
 
@@ -161,9 +171,11 @@ export default function Home() {
               data-testid="ai-search-submit"
               type="submit"
               disabled={aiLoading}
-              className="brutal-btn bg-[#F4FF47] px-6 py-3 rounded-md uppercase font-display text-lg disabled:opacity-50"
+              className="brutal-btn bg-[#F4FF47] text-black px-6 py-3 rounded-md uppercase font-display text-lg disabled:opacity-50"
             >
-              {aiLoading ? "Searching..." : "Search with AI"}
+              <span style={yellowTextStroke}>
+                {aiLoading ? "Searching..." : "Search with AI"}
+              </span>
             </button>
           </form>
 
@@ -174,7 +186,7 @@ export default function Home() {
                 {aiResult.keywords.map((keyword) => (
                   <span
                     key={keyword}
-                    className="chip mr-2 mt-1"
+                    className="chip mr-2 mt-1 text-black"
                     style={{ background: "#4ADE80" }}
                   >
                     {keyword}
@@ -189,7 +201,7 @@ export default function Home() {
                   ))}
                 </div>
               ) : (
-                <div className="text-sm text-neutral-600">
+                <div className="text-sm text-neutral-600 dark:text-neutral-300">
                   No approved notes found. Try simpler keywords.
                 </div>
               )}
@@ -205,7 +217,7 @@ export default function Home() {
         action={
           <Link
             to="/browse?featured=true"
-            className="text-sm font-bold uppercase flex items-center gap-1 hover:underline"
+            className="text-sm font-bold uppercase flex items-center gap-1 hover:underline text-black dark:text-white"
           >
             View all <ArrowRight size={14} />
           </Link>
@@ -231,7 +243,7 @@ export default function Home() {
         action={
           <Link
             to="/browse?sort=popular"
-            className="text-sm font-bold uppercase flex items-center gap-1 hover:underline"
+            className="text-sm font-bold uppercase flex items-center gap-1 hover:underline text-black dark:text-white"
             data-testid="home-view-all-trending"
           >
             View all <ArrowRight size={14} />
@@ -258,7 +270,7 @@ export default function Home() {
         action={
           <Link
             to="/browse"
-            className="text-sm font-bold uppercase flex items-center gap-1 hover:underline"
+            className="text-sm font-bold uppercase flex items-center gap-1 hover:underline text-black dark:text-white"
             data-testid="home-view-all-recent"
           >
             View all <ArrowRight size={14} />
@@ -284,13 +296,13 @@ export default function Home() {
                 key={college.name}
                 to={`/browse?college=${encodeURIComponent(college.name)}`}
                 data-testid={`college-chip-${college.name}`}
-                className="bg-white border-2 border-black rounded-md p-4 brutal-shadow-sm hover:bg-[#F4FF47] transition-colors"
+                className="bg-white dark:bg-[#1b1b1b] border-2 border-black dark:border-white rounded-md p-4 brutal-shadow-sm hover:bg-[#F4FF47] dark:hover:bg-[#F4FF47] hover:text-black transition-colors"
               >
                 <div className="font-display text-lg leading-tight">
                   {college.name}
                 </div>
 
-                <div className="font-mono text-xs text-neutral-600 mt-1">
+                <div className="font-mono text-xs text-neutral-600 dark:text-neutral-300 mt-1">
                   {college.count} notes
                 </div>
               </Link>
@@ -303,7 +315,7 @@ export default function Home() {
 }
 
 const EmptyState = ({ text }) => (
-  <div className="bg-white border-2 border-dashed border-black rounded-lg p-8 text-center text-sm text-neutral-600">
+  <div className="bg-white dark:bg-[#1b1b1b] border-2 border-dashed border-black dark:border-white rounded-lg p-8 text-center text-sm text-neutral-600 dark:text-neutral-300">
     {text}
   </div>
 );

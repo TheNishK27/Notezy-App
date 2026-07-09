@@ -34,7 +34,13 @@ import CheckoutSuccess from "@/pages/CheckoutSuccess";
 import AdminDashboard from "@/pages/AdminDashboard";
 
 function LoadingScreen({ text = "Loading..." }) {
-  return <div className="p-8 font-bold">{text}</div>;
+  return (
+    <div className="min-h-[60vh] flex items-center justify-center px-4">
+      <div className="notezy-card px-6 py-5 font-display text-2xl">
+        {text}
+      </div>
+    </div>
+  );
 }
 
 function Protected({ children }) {
@@ -108,18 +114,20 @@ const protectedRoute = (page) => <Protected>{page}</Protected>;
 
 function Shell({ children }) {
   return (
-    <div className="App min-h-screen bg-[#FAFAFA] text-[#050505]">
+    <div className="App min-h-screen bg-[#FAFAFA] text-[#050505] dark:bg-[#111111] dark:text-white transition-colors duration-200">
       <Nav />
 
-      <main>{children}</main>
+      <main className="min-h-[calc(100vh-70px)] pb-8">{children}</main>
 
       <Toaster
         position="top-right"
         toastOptions={{
-          className: "border-2 border-black rounded-lg font-medium",
+          className:
+            "border-2 border-black dark:border-white rounded-lg font-medium",
           style: {
-            background: "#fff",
-            boxShadow: "4px 4px 0 0 #050505",
+            background: "var(--toast-bg)",
+            color: "var(--toast-text)",
+            boxShadow: "4px 4px 0 0 var(--toast-shadow)",
           },
         }}
       />
@@ -130,35 +138,29 @@ function Shell({ children }) {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public */}
       <Route path="/" element={<Landing />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
 
-      {/* Discovery */}
       <Route path="/browse" element={<Browse />} />
       <Route path="/explore" element={<Explore />} />
       <Route path="/notes/:id" element={<NoteDetail />} />
 
-      {/* User */}
       <Route path="/home" element={protectedRoute(<Home />)} />
       <Route path="/library" element={protectedRoute(<Library />)} />
       <Route path="/wishlist" element={protectedRoute(<Wishlist />)} />
       <Route path="/wallet" element={protectedRoute(<WalletPage />)} />
       <Route path="/profile" element={protectedRoute(<Profile />)} />
 
-      {/* Seller */}
       <Route path="/upload" element={protectedRoute(<UploadPage />)} />
       <Route path="/dashboard" element={protectedRoute(<SellerDashboard />)} />
 
-      {/* Checkout */}
       <Route
         path="/checkout/success"
         element={protectedRoute(<CheckoutSuccess />)}
       />
 
-      {/* Admin */}
       <Route
         path="/admin"
         element={
@@ -167,9 +169,7 @@ function AppRoutes() {
           </AdminProtected>
         }
       />
-      
 
-      {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

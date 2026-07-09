@@ -168,7 +168,7 @@ export default function Browse() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 text-black dark:text-white">
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 border-2 border-black rounded-md flex items-center justify-center bg-[#4C7BF4] text-white">
           <MagnifyingGlass size={20} weight="bold" />
@@ -178,7 +178,7 @@ export default function Browse() {
       </div>
 
       <div className="grid lg:grid-cols-12 gap-6">
-        <aside className="lg:col-span-3 bg-white border-2 border-black rounded-lg p-5 brutal-shadow space-y-4 h-fit sticky top-24">
+        <aside className="lg:col-span-3 bg-white dark:bg-[#1b1b1b] border-2 border-black dark:border-white rounded-lg p-5 brutal-shadow space-y-4 h-fit sticky top-24">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 font-display text-xl">
               <FunnelSimple size={20} weight="bold" /> Filters
@@ -194,13 +194,13 @@ export default function Browse() {
 
           <div>
             <div className="text-xs uppercase font-bold mb-1">Search</div>
-            <div className="flex items-center gap-2 border-2 border-black rounded-md px-3 py-2 bg-white">
+            <div className="flex items-center gap-2 border-2 border-black dark:border-white rounded-md px-3 py-2 bg-white dark:bg-[#111111]">
               <MagnifyingGlass size={14} />
               <input
                 placeholder="Title, subject, branch..."
                 value={filters.q}
                 onChange={(e) => set("q", e.target.value)}
-                className="w-full text-sm outline-none"
+                className="w-full text-sm outline-none bg-transparent text-black dark:text-white"
               />
             </div>
           </div>
@@ -259,7 +259,7 @@ export default function Browse() {
               placeholder="Any"
               value={filters.semester}
               onChange={(e) => set("semester", e.target.value)}
-              className="w-full border-2 border-black rounded-md px-3 py-2 text-sm"
+              className="w-full border-2 border-black dark:border-white rounded-md px-3 py-2 text-sm bg-white dark:bg-[#111111] text-black dark:text-white"
             />
           </div>
 
@@ -269,7 +269,7 @@ export default function Browse() {
               placeholder="NIT Patna"
               value={filters.college}
               onChange={(e) => set("college", e.target.value)}
-              className="w-full border-2 border-black rounded-md px-3 py-2 text-sm"
+              className="w-full border-2 border-black dark:border-white rounded-md px-3 py-2 text-sm bg-white dark:bg-[#111111] text-black dark:text-white"
             />
           </div>
 
@@ -289,7 +289,7 @@ export default function Browse() {
 
         <div className="lg:col-span-9">
           <div className="flex justify-between items-center mb-3">
-            <div className="text-sm font-bold uppercase text-neutral-700">
+            <div className="text-sm font-bold uppercase text-neutral-700 dark:text-neutral-300">
               {loading ? "Searching..." : `${notes.length} approved notes found`}
             </div>
           </div>
@@ -301,11 +301,11 @@ export default function Browse() {
               ))}
             </div>
           ) : (
-            <div className="bg-white border-2 border-dashed border-black rounded-lg p-10 text-center">
+            <div className="bg-white dark:bg-[#1b1b1b] border-2 border-dashed border-black dark:border-white rounded-lg p-10 text-center">
               <div className="font-display text-2xl">
                 {loading ? "Loading notes..." : "No approved notes match these filters"}
               </div>
-              <div className="text-sm text-neutral-600 mt-2">
+              <div className="text-sm text-neutral-600 dark:text-neutral-300 mt-2">
                 Try removing some filters or changing keywords.
               </div>
             </div>
@@ -323,7 +323,7 @@ const Select = ({ label, value, onChange, options }) => (
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full border-2 border-black rounded-md px-3 py-2 text-sm bg-white"
+      className="w-full border-2 border-black dark:border-white rounded-md px-3 py-2 text-sm bg-white dark:bg-[#111111] text-black dark:text-white"
     >
       <option value="">Any</option>
 

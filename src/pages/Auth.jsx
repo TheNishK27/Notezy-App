@@ -10,21 +10,24 @@ import {
   Hash,
   ArrowRight,
   ShieldCheck,
+  Sparkle,
 } from "@phosphor-icons/react";
 
 const ALLOWED_EMAIL_DOMAIN = "@nitp.ac.in";
 
 const TextField = ({ icon: Icon, label, testId, ...props }) => (
   <label className="block">
-    <span className="block text-xs uppercase font-bold mb-1 tracking-wide">
+    <span className="block text-xs uppercase font-bold mb-1 tracking-wide text-neutral-700 dark:text-neutral-300">
       {label}
     </span>
-    <div className="flex items-center gap-2 border-2 border-black rounded-md px-3 py-2 bg-white focus-within:shadow-[3px_3px_0_0_#050505] transition-shadow">
-      {Icon && <Icon size={16} weight="bold" className="text-neutral-600" />}
+
+    <div className="flex items-center gap-2 notezy-input focus-within:shadow-[3px_3px_0_0_#050505] dark:focus-within:shadow-[3px_3px_0_0_#ffffff] transition-shadow">
+      {Icon && <Icon size={16} weight="bold" className="text-neutral-600 dark:text-neutral-300" />}
+
       <input
         data-testid={testId}
         {...props}
-        className="w-full outline-none bg-transparent text-sm"
+        className="w-full outline-none bg-transparent text-sm text-black dark:text-white disabled:opacity-70"
       />
     </div>
   </label>
@@ -50,9 +53,8 @@ export default function Auth() {
     setForm({ ...form, [key]: e.target.value });
   };
 
-  const isNitpEmail = (email) => {
-    return email.trim().toLowerCase().endsWith(ALLOWED_EMAIL_DOMAIN);
-  };
+  const isNitpEmail = (email) =>
+    email.trim().toLowerCase().endsWith(ALLOWED_EMAIL_DOMAIN);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -96,10 +98,7 @@ export default function Auth() {
         });
 
         if (error) throw error;
-
-        if (!data.session) {
-          throw new Error("Please verify your email first.");
-        }
+        if (!data.session) throw new Error("Please verify your email first.");
 
         toast.success("Logged in successfully");
         navigate("/home", { replace: true });
@@ -112,9 +111,11 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-72px)] grid lg:grid-cols-2">
-      <div className="hidden lg:flex bg-[#F4FF47] border-r-2 border-black p-12 flex-col justify-between">
-        <div>
+    <div className="min-h-[calc(100vh-72px)] grid lg:grid-cols-2 text-black dark:text-white">
+      <div className="hidden lg:flex bg-[#F4FF47] text-black border-r-2 border-black dark:border-white p-12 flex-col justify-between relative overflow-hidden">
+        <div className="absolute -right-20 -top-20 w-64 h-64 rounded-full bg-white/50 border-2 border-black" />
+
+        <div className="relative">
           <div className="inline-flex items-center gap-2 bg-white border-2 border-black px-3 py-1 rounded-full brutal-shadow-sm text-xs uppercase font-bold">
             <ShieldCheck size={14} weight="bold" /> NIT Patna Students Only
           </div>
@@ -125,35 +126,45 @@ export default function Auth() {
 
           <p className="text-neutral-800 mt-4 max-w-md">
             Sign up with your official NIT Patna email ending with{" "}
-            <b>@nitp.ac.in</b>. Supabase will send a verification link.
+            <b>@nitp.ac.in</b>. We’ll send a verification link.
           </p>
         </div>
 
-        <div className="bg-white border-2 border-black rounded-md p-4 brutal-shadow">
+        <div className="relative bg-white border-2 border-black rounded-md p-4 brutal-shadow">
           <div className="font-mono text-xs uppercase text-neutral-600">
-            Latest Earner
+            Beta Launch
           </div>
-
           <div className="font-display text-2xl mt-1">
-            Priya from NIT Patna made ₹2,340 this week
+            Built first for NIT Patna students.
           </div>
         </div>
       </div>
 
-      <div className="p-6 lg:p-12 flex items-center justify-center">
-        <form
-          onSubmit={submit}
-          className="w-full max-w-md bg-white border-2 border-black rounded-lg p-6 brutal-shadow space-y-4"
-        >
-          <div className="flex gap-2">
+      <div className="p-4 sm:p-6 lg:p-12 flex items-center justify-center">
+        <form onSubmit={submit} className="w-full max-w-md notezy-card p-5 sm:p-6 space-y-4">
+          <div>
+            <div className="inline-flex items-center gap-2 chip mb-3">
+              <Sparkle size={12} weight="fill" /> Notezy Access
+            </div>
+            <h1 className="font-display text-3xl">
+              {mode === "login" ? "Welcome back" : "Create your account"}
+            </h1>
+            <p className="text-sm text-neutral-600 dark:text-neutral-300 mt-1">
+              Use your official NIT Patna email to continue.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
             {["login", "register"].map((m) => (
               <button
                 key={m}
                 type="button"
                 data-testid={`auth-tab-${m}`}
                 onClick={() => setMode(m)}
-                className={`flex-1 py-2 border-2 border-black rounded-md uppercase font-bold text-sm transition-all ${
-                  mode === m ? "bg-[#F4FF47] brutal-shadow-sm" : "bg-white"
+                className={`py-2 border-2 rounded-md uppercase font-bold text-sm transition-all ${
+                  mode === m
+                    ? "bg-[#F4FF47] text-black border-black brutal-shadow-sm"
+                    : "bg-white dark:bg-[#111111] text-black dark:text-white border-black dark:border-white"
                 }`}
               >
                 {m === "login" ? "Sign In" : "Sign Up"}
@@ -173,7 +184,7 @@ export default function Auth() {
                 required
               />
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <TextField
                   icon={GraduationCap}
                   testId="auth-college"
@@ -195,7 +206,7 @@ export default function Auth() {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <TextField
                   testId="auth-dept"
                   label="Branch"
@@ -269,13 +280,13 @@ export default function Auth() {
             type="submit"
             data-testid="auth-submit"
             disabled={loading}
-            className="w-full brutal-btn bg-black text-white py-3 rounded-md uppercase font-display text-lg flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full brutal-btn bg-black dark:bg-white text-white dark:text-black py-3 rounded-md uppercase font-display text-lg flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {loading ? "..." : mode === "login" ? "Sign In" : "Create Account"}
+            {loading ? "Please wait..." : mode === "login" ? "Sign In" : "Create Account"}
             <ArrowRight size={18} weight="bold" />
           </button>
 
-          <div className="text-xs text-neutral-600 text-center">
+          <div className="text-xs text-neutral-600 dark:text-neutral-300 text-center">
             {mode === "login" ? (
               <span>
                 New here?{" "}
@@ -303,7 +314,7 @@ export default function Auth() {
             )}
           </div>
 
-          <p className="text-[11px] text-center text-neutral-500">
+          <p className="text-[11px] text-center text-neutral-500 dark:text-neutral-400">
             Only emails ending with <b>@nitp.ac.in</b> are allowed.
           </p>
         </form>

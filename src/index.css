@@ -5,124 +5,376 @@
 @tailwind components;
 @tailwind utilities;
 
-
 :root {
-    --background: 0 0% 98%;
-    --foreground: 0 0% 2%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 2%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 2%;
-    --primary: 0 0% 0%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 30%;
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 4 100% 56%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 0%;
-    --input: 0 0% 0%;
-    --ring: 0 0% 0%;
-    --radius: 0.5rem;
+  --notezy-yellow: #F4FF47;
+  --notezy-blue: #4C7BF4;
+  --notezy-pink: #FF6B9E;
+  --notezy-green: #4ADE80;
+  --notezy-black: #050505;
+  --notezy-bg: #FAFAFA;
+  --notezy-dark: #111111;
+  --notezy-dark-card: #1b1b1b;
 
-    --notezy-yellow: #F4FF47;
-    --notezy-blue: #4C7BF4;
-    --notezy-pink: #FF6B9E;
-    --notezy-green: #4ADE80;
-    --notezy-black: #050505;
+  --toast-bg: #ffffff;
+  --toast-text: #050505;
+  --toast-shadow: #050505;
 }
 
-* { border-color: hsl(var(--border)); }
+html.dark {
+  --toast-bg: #1b1b1b;
+  --toast-text: #ffffff;
+  --toast-shadow: #ffffff;
+}
 
-html, body {
-    background: #FAFAFA;
-    color: var(--notezy-black);
-    font-family: 'Work Sans', system-ui, sans-serif;
-    -webkit-font-smoothing: antialiased;
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  background: var(--notezy-bg);
+  color: var(--notezy-black);
+  font-family: 'Work Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+html.dark,
+html.dark body,
+html.dark #root {
+  background: var(--notezy-dark);
+  color: #ffffff;
+}
+
+body {
+  overflow-x: hidden;
 }
 
 .font-display {
-    font-family: 'Cabinet Grotesk', 'Work Sans', sans-serif;
-    font-weight: 800;
-    letter-spacing: -0.02em;
+  font-family: 'Cabinet Grotesk', 'Work Sans', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
-.font-mono { font-family: 'JetBrains Mono', monospace; }
 
-.brutal-shadow { box-shadow: 4px 4px 0 0 #050505; }
-.brutal-shadow-sm { box-shadow: 2px 2px 0 0 #050505; }
-.brutal-shadow-lg { box-shadow: 8px 8px 0 0 #050505; }
-.brutal-card {
-    background: white;
-    border: 2px solid #050505;
-    border-radius: 8px;
-    box-shadow: 4px 4px 0 0 #050505;
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
 }
-.brutal-card-hover {
-    transition: transform 180ms ease, box-shadow 180ms ease;
+
+.brutal-shadow {
+  box-shadow: 4px 4px 0 0 #050505;
 }
-.brutal-card-hover:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 8px 8px 0 0 #050505;
+
+.brutal-shadow-sm {
+  box-shadow: 2px 2px 0 0 #050505;
 }
+
+.brutal-shadow-lg {
+  box-shadow: 8px 8px 0 0 #050505;
+}
+
+html.dark .brutal-shadow {
+  box-shadow: 4px 4px 0 0 #ffffff;
+}
+
+html.dark .brutal-shadow-sm {
+  box-shadow: 2px 2px 0 0 #ffffff;
+}
+
+html.dark .brutal-shadow-lg {
+  box-shadow: 8px 8px 0 0 #ffffff;
+}
+
 .brutal-btn {
-    border: 2px solid #050505;
-    border-radius: 8px;
-    box-shadow: 3px 3px 0 0 #050505;
-    transition: transform 120ms ease, box-shadow 120ms ease;
-    font-weight: 700;
+  border: 2px solid #050505;
+  border-radius: 8px;
+  box-shadow: 3px 3px 0 0 #050505;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  font-weight: 700;
 }
-.brutal-btn:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 0 #050505; }
-.brutal-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 0 #050505; }
+
+.brutal-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 0 #050505;
+}
+
+.brutal-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 0 #050505;
+}
+
+html.dark .brutal-btn {
+  border-color: #ffffff;
+  box-shadow: 3px 3px 0 0 #ffffff;
+}
+
+html.dark .brutal-btn:hover {
+  box-shadow: 5px 5px 0 0 #ffffff;
+}
+
+html.dark .brutal-btn:active {
+  box-shadow: 1px 1px 0 0 #ffffff;
+}
+
+.notezy-card {
+  background: #ffffff;
+  color: #050505;
+  border: 2px solid #050505;
+  border-radius: 10px;
+  box-shadow: 4px 4px 0 0 #050505;
+}
+
+html.dark .notezy-card {
+  background: #1b1b1b;
+  color: #ffffff;
+  border-color: #ffffff;
+  box-shadow: 4px 4px 0 0 #ffffff;
+}
+
+.notezy-input {
+  width: 100%;
+  background: #ffffff;
+  color: #050505;
+  border: 2px solid #050505;
+  border-radius: 8px;
+  padding: 0.65rem 0.85rem;
+  outline: none;
+}
+
+.notezy-input::placeholder {
+  color: #737373;
+}
+
+html.dark .notezy-input {
+  background: #111111;
+  color: #ffffff;
+  border-color: #ffffff;
+}
+
+html.dark .notezy-input::placeholder {
+  color: #a3a3a3;
+}
+
+.notezy-yellow-btn {
+  background: #F4FF47;
+  color: #050505 !important;
+  border: 2px solid #050505;
+  border-radius: 8px;
+  box-shadow: 3px 3px 0 0 #050505;
+  font-weight: 800;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.notezy-yellow-btn *,
+.bg-\[\#F4FF47\],
+.bg-\[\#F4FF47\] * {
+  color: #050505 !important;
+}
+
+.notezy-yellow-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 0 #050505;
+}
+
+.notezy-yellow-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 0 #050505;
+}
+
+html.dark .notezy-yellow-btn {
+  border-color: #ffffff;
+  box-shadow: 3px 3px 0 0 #ffffff;
+}
+
+html.dark .notezy-yellow-btn:hover {
+  box-shadow: 5px 5px 0 0 #ffffff;
+}
+
+.notezy-blue-btn {
+  background: #4C7BF4;
+  color: #ffffff !important;
+  border: 2px solid #050505;
+  border-radius: 8px;
+  box-shadow: 3px 3px 0 0 #050505;
+  font-weight: 800;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.notezy-blue-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 0 #050505;
+}
+
+html.dark .notezy-blue-btn {
+  border-color: #ffffff;
+  box-shadow: 3px 3px 0 0 #ffffff;
+}
+
+.notezy-icon-btn {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  color: #050505;
+  border: 2px solid #050505;
+  border-radius: 8px;
+  box-shadow: 2px 2px 0 0 #050505;
+  flex-shrink: 0;
+}
+
+html.dark .notezy-icon-btn {
+  background: #111111;
+  color: #ffffff;
+  border-color: #ffffff;
+  box-shadow: 2px 2px 0 0 #ffffff;
+}
+
+.brutal-card {
+  background: white;
+  border: 2px solid #050505;
+  border-radius: 8px;
+  box-shadow: 4px 4px 0 0 #050505;
+}
+
+html.dark .brutal-card {
+  background: #1b1b1b;
+  color: #ffffff;
+  border-color: #ffffff;
+  box-shadow: 4px 4px 0 0 #ffffff;
+}
+
+.brutal-card-hover {
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.brutal-card-hover:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 0 #050505;
+}
+
+html.dark .brutal-card-hover:hover {
+  box-shadow: 8px 8px 0 0 #ffffff;
+}
 
 .paper-bg {
-    background-color: #FAFAFA;
-    background-image:
-      linear-gradient(#e5e7eb 1px, transparent 1px),
-      linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
-    background-size: 28px 28px;
-    background-position: -1px -1px;
+  background-color: #FAFAFA;
+  background-image:
+    linear-gradient(#e5e7eb 1px, transparent 1px),
+    linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
+  background-size: 28px 28px;
+  background-position: -1px -1px;
+}
+
+html.dark .paper-bg {
+  background-color: #111111;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
 }
 
 .lined-paper {
-    background-color: #FFFEF7;
-    background-image: repeating-linear-gradient(
-        transparent,
-        transparent 27px,
-        #d4d4d8 27px,
-        #d4d4d8 28px
-    );
+  background-color: #FFFEF7;
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent 27px,
+    #d4d4d8 27px,
+    #d4d4d8 28px
+  );
 }
 
-/* Marquee */
+html.dark .lined-paper {
+  background-color: #1b1b1b;
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent 27px,
+    rgba(255, 255, 255, 0.12) 27px,
+    rgba(255, 255, 255, 0.12) 28px
+  );
+}
+
 @keyframes marquee {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
+
 .marquee-track {
-    animation: marquee 28s linear infinite;
+  animation: marquee 28s linear infinite;
 }
 
-/* Custom selection */
-::selection { background: #F4FF47; color: #050505; }
+::selection {
+  background: #F4FF47;
+  color: #050505;
+}
 
-/* Tag chip */
 .chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 10px;
-    border: 2px solid #050505;
-    border-radius: 999px;
-    background: white;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 2px solid #050505;
+  border-radius: 999px;
+  background: white;
+  color: #050505;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-/* hide scrollbar in carousels */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { scrollbar-width: none; }
+html.dark .chip {
+  background: #1b1b1b;
+  color: #ffffff;
+  border-color: #ffffff;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: #111111;
+  color: #ffffff;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #a3a3a3;
+}
+
+html.dark a {
+  color: inherit;
+}
+
+@media (max-width: 640px) {
+  .brutal-shadow {
+    box-shadow: 3px 3px 0 0 #050505;
+  }
+
+  html.dark .brutal-shadow {
+    box-shadow: 3px 3px 0 0 #ffffff;
+  }
+
+  .brutal-shadow-lg {
+    box-shadow: 5px 5px 0 0 #050505;
+  }
+
+  html.dark .brutal-shadow-lg {
+    box-shadow: 5px 5px 0 0 #ffffff;
+  }
+
+  .notezy-card {
+    box-shadow: 3px 3px 0 0 #050505;
+  }
+
+  html.dark .notezy-card {
+    box-shadow: 3px 3px 0 0 #ffffff;
+  }
+}
