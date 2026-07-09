@@ -35,21 +35,21 @@ const BRANCHES = [
 const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 const Field = ({ label, helper, className = "", ...props }) => (
-  <label className={`block ${className}`}>
+  <label className={`block min-w-0 ${className}`}>
     <span className="block text-xs uppercase font-bold mb-1 tracking-wide text-neutral-700 dark:text-neutral-300">
       {label}
     </span>
-    <input {...props} className="notezy-input text-sm" />
+    <input {...props} className="notezy-input w-full min-w-0 text-sm" />
     {helper && <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{helper}</p>}
   </label>
 );
 
 const SelectField = ({ label, value, onChange, children, required = false, helper }) => (
-  <label className="block">
+  <label className="block min-w-0">
     <span className="block text-xs uppercase font-bold mb-1 tracking-wide text-neutral-700 dark:text-neutral-300">
       {label}
     </span>
-    <select value={value} onChange={onChange} required={required} className="notezy-input text-sm">
+    <select value={value} onChange={onChange} required={required} className="notezy-input w-full min-w-0 text-sm truncate">
       {children}
     </select>
     {helper && <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{helper}</p>}
@@ -290,14 +290,14 @@ export default function UploadPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 text-black dark:text-white">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
-        <div className="flex items-center gap-3">
+    <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 py-5 sm:py-8 text-black dark:text-white overflow-x-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6 min-w-0">
+        <div className="flex items-start sm:items-center gap-3 min-w-0">
           <div className="w-11 h-11 border-2 border-black dark:border-white rounded-md flex items-center justify-center bg-[#4C7BF4] text-white brutal-shadow-sm">
             <UploadSimple size={22} weight="bold" />
           </div>
-          <div>
-            <h1 className="font-display text-4xl sm:text-5xl leading-none">Upload Note</h1>
+          <div className="min-w-0">
+            <h1 className="font-display text-3xl sm:text-5xl leading-none break-words">Upload Note</h1>
             <p className="text-sm text-neutral-600 dark:text-neutral-300 mt-1">
               Create preview, thumbnail, and secure full PDF automatically.
             </p>
@@ -309,15 +309,15 @@ export default function UploadPage() {
         </div>
       </div>
 
-      <form onSubmit={submit} className="grid lg:grid-cols-12 gap-6 items-start">
-        <div className="lg:col-span-8 space-y-5">
-          <section className="notezy-card p-5 sm:p-6 space-y-4">
-            <div className="flex items-start gap-3">
+      <form onSubmit={submit} className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start min-w-0">
+        <div className="lg:col-span-8 space-y-5 min-w-0">
+          <section className="notezy-card p-4 sm:p-6 space-y-4 min-w-0">
+            <div className="flex items-start gap-3 min-w-0">
               <div className="w-10 h-10 bg-[#4ADE80] text-black border-2 border-black dark:border-white rounded-md flex items-center justify-center shrink-0">
                 <BookOpenText size={20} weight="bold" />
               </div>
-              <div>
-                <h2 className="font-display text-2xl">Note Details</h2>
+              <div className="min-w-0">
+                <h2 className="font-display text-2xl break-words">Note Details</h2>
                 <p className="text-sm text-neutral-600 dark:text-neutral-300">
                   Add enough detail so buyers understand what they are purchasing.
                 </p>
@@ -336,11 +336,11 @@ export default function UploadPage() {
                 onChange={set("description")}
                 required
                 placeholder="What's inside? Why is it useful? Mention units, PYQs, solved examples, diagrams, etc."
-                className="notezy-input text-sm resize-none min-h-[120px]"
+                className="notezy-input w-full min-w-0 text-sm resize-none min-h-[120px]"
               />
             </label>
 
-            <div className="grid sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0">
               <SelectField label="Branch" value={form.branch} onChange={set("branch")} required>
                 <option value="">Select branch</option>
                 {BRANCHES.map((branch) => (
@@ -370,13 +370,13 @@ export default function UploadPage() {
             )}
           </section>
 
-          <section className="notezy-card p-5 sm:p-6 space-y-4">
-            <div className="flex items-start gap-3">
+          <section className="notezy-card p-4 sm:p-6 space-y-4 min-w-0">
+            <div className="flex items-start gap-3 min-w-0">
               <div className="w-10 h-10 bg-[#FF6B9E] text-black border-2 border-black dark:border-white rounded-md flex items-center justify-center shrink-0">
                 <FileText size={20} weight="bold" />
               </div>
-              <div>
-                <h2 className="font-display text-2xl">PDF File</h2>
+              <div className="min-w-0">
+                <h2 className="font-display text-2xl break-words">PDF File</h2>
                 <p className="text-sm text-neutral-600 dark:text-neutral-300">
                   Upload one PDF. A 3-page preview and thumbnail will be generated.
                 </p>
@@ -394,7 +394,7 @@ export default function UploadPage() {
                 setDragActive(false);
                 handleFile(e.dataTransfer.files?.[0]);
               }}
-              className={`border-2 border-dashed rounded-lg p-6 sm:p-8 text-center cursor-pointer transition-all ${
+              className={`border-2 border-dashed rounded-lg p-4 sm:p-8 text-center cursor-pointer transition-all min-w-0 ${
                 dragActive
                   ? "border-[#4C7BF4] bg-blue-50 dark:bg-blue-950/30"
                   : "border-black dark:border-white bg-[#FAFAFA] dark:bg-[#111111]"
@@ -415,7 +415,7 @@ export default function UploadPage() {
                     <UploadSimple size={28} weight="bold" />
                   </div>
                   <div>
-                    <div className="font-display text-2xl">Drop your PDF here</div>
+                    <div className="font-display text-xl sm:text-2xl break-words">Drop your PDF here</div>
                     <div className="text-sm text-neutral-600 dark:text-neutral-300 mt-1">
                       or click to browse from your device
                     </div>
@@ -431,7 +431,7 @@ export default function UploadPage() {
                       <FileText size={24} weight="bold" />
                     </div>
                     <div className="min-w-0">
-                      <div className="font-bold truncate">{file.name}</div>
+                      <div className="font-bold truncate max-w-[220px] sm:max-w-none">{file.name}</div>
                       <div className="text-xs text-neutral-600 dark:text-neutral-300">{formatFileSize(file.size)}</div>
                     </div>
                   </div>
@@ -449,14 +449,14 @@ export default function UploadPage() {
           </section>
         </div>
 
-        <aside className="lg:col-span-4 lg:sticky lg:top-24 space-y-5">
-          <section className="notezy-card p-5 sm:p-6 space-y-4">
-            <div className="flex items-start gap-3">
+        <aside className="lg:col-span-4 lg:sticky lg:top-24 space-y-5 min-w-0">
+          <section className="notezy-card p-4 sm:p-6 space-y-4 min-w-0">
+            <div className="flex items-start gap-3 min-w-0">
               <div className="w-10 h-10 bg-[#F4FF47] text-black border-2 border-black dark:border-white rounded-md flex items-center justify-center shrink-0">
                 <CurrencyInr size={20} weight="bold" />
               </div>
-              <div>
-                <h2 className="font-display text-2xl">Pricing</h2>
+              <div className="min-w-0">
+                <h2 className="font-display text-2xl break-words">Pricing</h2>
                 <p className="text-sm text-neutral-600 dark:text-neutral-300">Keep it affordable for students.</p>
               </div>
             </div>
@@ -476,14 +476,14 @@ export default function UploadPage() {
                   value={form.price}
                   onChange={set("price")}
                   required
-                  className="w-full bg-transparent px-3 py-2 outline-none text-sm text-black dark:text-white"
+                  className="w-full min-w-0 bg-transparent px-3 py-2 outline-none text-sm text-black dark:text-white"
                 />
               </div>
               <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">₹0 = Free · Max ₹100</p>
             </label>
           </section>
 
-          <section className="notezy-card p-5 sm:p-6 space-y-4">
+          <section className="notezy-card p-4 sm:p-6 space-y-4 min-w-0">
             <h2 className="font-display text-2xl">Publish Checklist</h2>
             <ChecklistItem done={Boolean(file)} text="PDF file attached" />
             <ChecklistItem done={Boolean(form.title)} text="Title added" />
@@ -493,11 +493,11 @@ export default function UploadPage() {
             <ChecklistItem done={priceNumber >= 0 && priceNumber <= 100} text="Price is valid" />
           </section>
 
-          <section className="bg-[#F4FF47] text-black border-2 border-black dark:border-white rounded-lg p-5 brutal-shadow space-y-4">
+          <section className="bg-[#F4FF47] text-black border-2 border-black dark:border-white rounded-lg p-4 sm:p-5 brutal-shadow space-y-4 min-w-0">
             <div className="flex items-center gap-2 text-xs uppercase font-bold">
               <GraduationCap size={16} weight="bold" /> Uploading for
             </div>
-            <div className="font-display text-3xl leading-none">NIT Patna</div>
+            <div className="font-display text-2xl sm:text-3xl leading-none break-words">NIT Patna</div>
             <p className="text-sm text-neutral-700">
               Your note will appear in Browse only after admin approval.
             </p>
@@ -505,7 +505,7 @@ export default function UploadPage() {
             <button
               type="submit"
               disabled={!canSubmit}
-              className="w-full notezy-blue-btn py-3 rounded-md uppercase font-display text-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full min-w-0 notezy-blue-btn py-3 rounded-md uppercase font-display text-base sm:text-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <UploadSimple size={20} weight="bold" />
               {loading ? "Publishing..." : "Publish Note"}
@@ -518,12 +518,12 @@ export default function UploadPage() {
 }
 
 const ChecklistItem = ({ done, text }) => (
-  <div className="flex items-center gap-2 text-sm">
+  <div className="flex items-start gap-2 text-sm min-w-0">
     {done ? (
       <CheckCircle size={18} weight="fill" className="text-green-600 dark:text-green-400" />
     ) : (
       <WarningCircle size={18} weight="bold" className="text-neutral-400" />
     )}
-    <span className={done ? "font-bold" : "text-neutral-600 dark:text-neutral-400"}>{text}</span>
+    <span className={done ? "font-bold break-words" : "text-neutral-600 dark:text-neutral-400 break-words"}>{text}</span>
   </div>
 );
